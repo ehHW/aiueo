@@ -1,0 +1,118 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+:root.light {
+    --bg-color: #fff;
+    --text-color: #333;
+    --hover-text-color: #46a1ff;
+
+    --header-bg-color: #fff;
+    --layout-content-bg-bg-color: #e4e4e4;
+    --layout-content-bg-color: #f1f1f1;
+
+    --primary-btn-text-color: #46a1ff;
+    --primary-btn-bg-color: #daf0ff;
+    --primary-btn-hover-text-color: #fff;
+    --primary-btn-hover-bg-color: #46a1ff;
+
+    --board-btn-text-color: rgb(0, 0, 0);
+    --board-btn-bg-color: #ede0c8;
+    --board-bg-color: #bbada0;
+
+    --my-main-search-bg-color: #fff;
+    --my-main-search-color: #333;
+
+    --my-main-table-bg-color: #fff;
+    --my-main-table-head-bg-color: #f5f7fa;
+    --my-main-table-head-color: black;
+    --my-main-table-head-border-color: #e6e6e6;
+    --my-main-table-cell-bg-color: #fff;
+    --my-main-table-cell-color: black;
+    --my-main-table-cell-border-color: #e6e6e6;
+
+    --my-pagination-button-bg-color2: #f0f2f5;
+    --my-pagination-button-text-color2: black;
+    --my-pagination-button-bg-color2-disabled: #e6e6e6;
+    --my-pagination-button-text-color2-disabled: rgb(56, 56, 56);
+
+    --footer-bg-color: #ffffff;
+    --footer-text-color: black;
+
+    --menu-bg-color: #fff;
+
+    --el-text-color-regular: black;
+
+    --chat-change-list-selected-text-color: #46a1ff;
+    --chat-change-list-selected-bg-color: #46a3ff1c;
+}
+
+:root.dark {
+    --bg-color: black;
+    --text-color: #fff;
+    --hover-text-color: #46a1ff;
+
+    --header-bg-color: #001529;
+    --layout-content-bg-bg-color: black;
+    --layout-content-bg-color: #27253b;
+
+    --primary-btn-text-color: #3e87d8;
+    --primary-btn-bg-color: #18222c;
+    --primary-btn-hover-text-color: #fff;
+    --primary-btn-hover-bg-color: #409eff;
+
+    --board-btn-text-color: #fff;
+    --board-btn-bg-color: #968b76;
+    --board-bg-color: #2a2a2a;
+
+    --my-main-search-bg-color: #001529;
+    --my-main-search-color: #fff;
+
+    --my-main-table-bg-color: #001529;
+    --my-main-table-head-bg-color: #001529;
+    --my-main-table-head-color: #cfd3dc;
+    --my-main-table-head-border-color: #373737;
+    --my-main-table-cell-bg-color: black;
+    --my-main-table-cell-color: #cfd3dc;
+    --my-main-table-cell-border-color: #373737;
+
+    --my-pagination-button-bg-color2: #303030;
+    --my-pagination-button-text-color2: #c4c8d0;
+    --my-pagination-button-bg-color2-disabled: #656565;
+    --my-pagination-button-text-color2-disabled: #c4c8d0;
+
+    --footer-bg-color: #001529;
+    --footer-text-color: #cdcdcd;
+
+    --menu-bg-color: #333;
+
+    --el-text-color-regular: rgb(222, 222, 222);
+}
+
+#app {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+::view-transition-new(root),
+::view-transition-old(root) {
+    animation: none;
+}
+
+.dark::view-transition-old(root) {
+    z-index: 10;
+}

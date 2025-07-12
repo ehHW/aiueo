@@ -1,0 +1,135 @@
+@font-face {
+    font-family: 'iconfont'; /* Project id 2818362 */
+    src:
+        url('./font_2818362_oqm6ai9lyhr.woff2') format('woff2'),
+        url('./font_2818362_oqm6ai9lyhr.woff') format('woff'),
+        url('./font_2818362_oqm6ai9lyhr.ttf') format('truetype');
+}
+
+.iconfont {
+    font-family: 'iconfont' !important;
+    font-size: 16px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-qiche:before {
+    content: '\ec6d';
+}
+
+.icon-diqiu:before {
+    content: '\e631';
+}
+
+.icon-yinle:before {
+    content: '\e623';
+}
+
+.icon-yingyuan:before {
+    content: '\e8c0';
+}
+
+.icon-dianyingpiao:before {
+    content: '\e8ae';
+}
+
+.icon-dianying:before {
+    content: '\e62e';
+}
+
+.icon-elment:before {
+    content: '\e8ca';
+}
+
+.icon-xiazai:before {
+    content: '\e632';
+}
+
+.icon-texiao:before {
+    content: '\ee33';
+}
+
+.icon-jiahao:before {
+    content: '\eaf3';
+}
+
+.icon-shanchu:before {
+    content: '\e62a';
+}
+
+.icon-bianji:before {
+    content: '\e8ac';
+}
+
+.icon-sousuo:before {
+    content: '\e622';
+}
+
+.icon-shouji:before {
+    content: '\e692';
+}
+
+.icon-mima:before {
+    content: '\e60b';
+}
+
+.icon-zhanghao:before {
+    content: '\e678';
+}
+
+.icon-dingdandaifukuan:before {
+    content: '\e896';
+}
+
+.icon-yonghuguanli:before {
+    content: '\e70c';
+}
+
+.icon-jiaoseguanli:before {
+    content: '\e70f';
+}
+
+.icon-fuwuquanxianguanli:before {
+    content: '\e664';
+}
+
+.icon-role:before {
+    content: '\e6a7';
+}
+
+.icon-mendianguanli:before {
+    content: '\e60a';
+}
+
+.icon-shangpin:before {
+    content: '\e634';
+}
+
+.icon-liebiao:before {
+    content: '\ec6b';
+}
+
+.icon-zengjia1:before {
+    content: '\e645';
+}
+
+.icon-home:before {
+    content: '\e63f';
+}
+
+.icon-histogram-:before {
+    content: '\e629';
+}
+
+.icon-data-analysis:before {
+    content: '\ed4f';
+}
+
+.icon-caidan:before {
+    content: '\e780';
+}
+
+.icon-shezhi:before {
+    content: '\e696';
+}
