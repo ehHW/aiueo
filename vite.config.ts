@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+// import vueDevTools from 'vite-plugin-vue-devtools'
 import legacy from '@vitejs/plugin-legacy'
 
 import AutoImport from 'unplugin-auto-import/vite'
@@ -15,7 +15,7 @@ export default defineConfig({
     base: './',
     plugins: [
         vue(),
-        vueDevTools(),
+        // vueDevTools(),
         AutoImport({
             resolvers: [ElementPlusResolver()],
         }),
@@ -37,4 +37,7 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url)),
         },
     },
+    server: {
+        allowedHosts: ['frp-end.com']
+    }
 })

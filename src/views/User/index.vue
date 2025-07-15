@@ -55,12 +55,12 @@
             </div>
             <el-table :data="tableData" :style="{
                 width: '100%',
-                flex: 1,
+                height: '100%',
                 border: 'none',
                 '--el-border-color-lighter': 'none',
                 borderCollapse: 'collapse',
                 background: 'var(--my-main-table-bg-color)',
-            }" :max-height="tableHeight" :border="true" :header-row-style="{}" :header-cell-style="{
+            }" max-height="100%" :border="true" :header-row-style="{}" :header-cell-style="{
                 background: 'var(--my-main-table-head-bg-color)',
                 color: 'var(--my-main-table-head-color)',
                 border: '0.5px solid var(--my-main-table-head-border-color)',
@@ -296,11 +296,11 @@ const handleAdd = () => {
     router.push('/user/create')
 }
 
-let tableHeight = ref(360)
+// let tableHeight = ref("100%")
 function expandSearch() {
     expand.value = !expand.value
     expandText.value = expand.value ? '收起' : '展开'
-    tableHeight.value = expand.value ? 320 : 360
+    // tableHeight.value = expand.value ? "80%" : "100%"
 }
 
 const formInline = reactive({
@@ -594,6 +594,10 @@ const resetFormRole = (formEl: FormInstance | undefined) => {
 
 :deep(.el-input__wrapper) {
     background-color: var(--my-main-search-bg-color) !important;
+}
+
+:deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
+    max-height: calc(100% - 20px) !important;
 }
 </style>
 

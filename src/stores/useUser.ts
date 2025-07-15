@@ -46,6 +46,7 @@ export const useUserStore = defineStore(
 
         let timer: number
         timer = setInterval(() => {
+            if (!userInfo.expires_in) return
             userInfo.expires_in -= 1
             if (userInfo.expires_in <= 10) {
                 refreshToken()

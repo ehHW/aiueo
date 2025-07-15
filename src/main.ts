@@ -53,6 +53,8 @@ const init = async () => {
                     }
                 },
             )
+        } else {
+            userStore.logout()
         }
     })
 }

@@ -31,6 +31,7 @@
             </div>
             <el-table :data="tableData" :style="{
                 width: '100%',
+                height: '100%',
                 border: 'none',
                 '--el-border-color-lighter': 'none',
                 borderCollapse: 'collapse',
@@ -465,4 +466,9 @@ const deleteRow = async (row: RoleListData) => {
 :deep(.el-tree-node) {
     background-color: var(--my-main-search-bg-color) !important;
 }
+
+:deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
+    max-height: calc(100% - 20px) !important;
+}
+
 </style>
