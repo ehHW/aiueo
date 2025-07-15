@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { toRef } from 'vue'
 import { Sunny, Moon } from '@element-plus/icons-vue'
 import { useThemeStore } from '@/stores/useTheme'
 
@@ -33,7 +33,16 @@ import { useThemeStore } from '@/stores/useTheme'
 const useTheme = useThemeStore()
 document.documentElement.classList.add('light')
 document.documentElement.classList.remove('dark')
-const isDark = ref(false)
+const isDark = toRef(useTheme.isDark)
+if (isDark.value) {
+    document.documentElement.classList.add('dark')
+    document.documentElement.classList.remove('light')
+    useTheme.isDark = true
+} else {
+    document.documentElement.classList.add('light')
+    document.documentElement.classList.remove('dark')
+    useTheme.isDark = false
+}
 function handleClick(event: MouseEvent) {
     const transition = document.startViewTransition(() => {
         if (isDark.value) {
@@ -46,7 +55,6 @@ function handleClick(event: MouseEvent) {
             useTheme.isDark = false
         }
     })
-
     transition.ready.then(() => {
         const { clientX, clientY } = event
         const radius = Math.hypot(

@@ -4,8 +4,13 @@
         <div class="logo">
             <img src="@/assets/img/miao.png" />
         </div>
-        <a-menu v-model:selectedKeys="selectedKeys" :theme="useTheme.isDark ? 'dark' : 'light'" mode="inline">
-            <a-sub-menu v-for="item in menu" :key="item.auth_id">
+        <a-menu
+            v-model:openKeys="openKeys"
+            v-model:selectedKeys="selectedKeys"
+            :theme="useTheme.isDark ? 'dark' : 'light'"
+            mode="inline"
+            >
+            <a-sub-menu v-for="item in useUser.menuList" :key="item.auth_id" >
                 <template #title>
                     <span>
                         <i class="iconfont" :class="item.icon"></i>
@@ -21,18 +26,37 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useMenuStore } from '@/stores/useMenu';
 import { useThemeStore } from '@/stores/useTheme';
 import { useRouter } from 'vue-router';
+import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/useUser';
 
-const selectedKeys = ref<string[]>(['1']);
+const route = useRoute()
+const openKeys = ref<number[]>([]);
+const selectedKeys = ref<number[]>([]);
 const useMenu = useMenuStore();
 const useUser = useUserStore()
-const menu = useUser.menuList;
 const useTheme = useThemeStore();
 const router = useRouter();
+
+watch(
+    () => route.path,
+    (newVal) => {
+        const matched = useUser.menuList.find(item => item.children.some(subItem => subItem.path === newVal));
+        if (matched) {
+            openKeys.value = [matched.auth_id];
+            selectedKeys.value = matched.children.filter(subItem => subItem.path === newVal).map(subItem => subItem.auth_id);
+        } else {
+            openKeys.value = [];
+            selectedKeys.value = [];
+        }
+    },
+    {
+        immediate: true,
+    }
+)
 
 const viewportHeight = ref(window.innerHeight);
 // console.log(viewportHeight.value);
