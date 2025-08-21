@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useChatStore = defineStore(
@@ -6,7 +6,7 @@ export const useChatStore = defineStore(
     () => {
         const toolBar = reactive({
             contactList: false,
-            chatList: true,
+            sessionList: true,
         })
 
         const toggleToolBar = (key: string) => {

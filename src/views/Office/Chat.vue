@@ -1,8 +1,8 @@
 <template>
     <div class="chat-container">
         <div class="change-list">
-            <div :class="{ 'session': true, 'selected': chatStore.toolBar.chatList }"
-                @click="chatStore.toggleToolBar('chatList')">
+            <div :class="{ 'session': true, 'selected': chatStore.toolBar.sessionList }"
+                @click="chatStore.toggleToolBar('sessionList')">
                 <span class="iconfont icon-xiaoxi"></span>
             </div>
             <div :class="{ 'contact': true, 'selected': chatStore.toolBar.contactList }"
@@ -11,40 +11,84 @@
             </div>
         </div>
         <div class="user-area">
-            <div class="user-list">
+            <div class="search">
+                <el-input placeholder="搜索" style="width: 70%;" />
+                <span>+</span>
+            </div>
+            <div class="session-list" v-if="chatStore.toolBar.sessionList">
                 <div class="self-user">
                     <div class="user-avatar">
                         <img src="" alt="头像" />
                     </div>
-                    <div class="search"></div>
                 </div>
-                <el-button type="primary" plain @click="test">测试请求</el-button>
+            </div>
+            <div class="friend-list" v-if="chatStore.toolBar.contactList">
+                <el-button type="primary" plain @click="addFriend(3)">添加好友</el-button> <br />
+                <el-button type="primary" plain @click="getFriendList">获取好友列表</el-button> <br />
+                <el-button type="primary" plain @click="getFriendRequestList">获取好友请求列表</el-button> <br />
+                <el-button type="primary" plain @click="handleFriendRequest('accept', 3)">接受好友请求</el-button> <br />
+                <el-button type="primary" plain @click="handleFriendRequest('decline', 3)">拒绝好友请求</el-button> <br />
             </div>
         </div>
-        <div class="chat-area"></div>
+        <div class="chat-area">
+            <div v-if="chatStore.toolBar.sessionList">
+                <!-- 聊天内容区域 -->
+                <p>聊天内容区域</p>
+            </div>
+            <div v-if="chatStore.toolBar.contactList">
+                <!-- 联系人内容区域 -->
+                <p>联系人内容区域</p>
+            </div>
+        </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
 import { useChatStore } from '@/stores/useChat';
-import { getTestApi, postTestApi } from '@/api/test';
+import {
+    getFriendListApi,
+    addFriendApi,
+    handleFriendRequestApi,
+    getFriendRequestListApi,
+ } from '@/api/friend';
 
 const chatStore = useChatStore();
 
-const test = () => {
-    // getTestApi().then((res) => {
-    //     console.log('GET API Response:', res);
-    // }).catch((error) => {
-    //     console.error('GET API Error:', error);
-    // });
-    postTestApi().then((res) => {
-        console.log('POST API Response:', res);
+
+const getFriendList = () => {
+    getFriendListApi().then((res) => {
+        console.log('获取好友列表:', res.data);
     }).catch((error) => {
-        console.error('POST API Error:', error);
+        console.error('获取好友列表失败:', error);
     });
 }
 
+
+const addFriend = (receiverId: number) => {
+    addFriendApi(receiverId).then((res) => {
+        console.log('添加好友请求:', res.data);
+    }).catch((error) => {
+        console.error('添加好友请求失败:', error);
+    });
+}
+
+
+const getFriendRequestList = () => {
+    getFriendRequestListApi().then((res) => {
+        console.log('获取好友请求列表:', res.data);
+    }).catch((error) => {
+        console.error('获取好友请求列表失败:', error);
+    });
+}
+
+
+const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => {
+    handleFriendRequestApi(action, senderId).then((res) => {
+        console.log(`处理好友请求 ${action}:`, res.data);
+    }).catch((error) => {
+        console.error(`处理好友请求 ${action} 失败:`, error);
+    });
+}
 </script>
 
 <style scoped>
@@ -120,11 +164,35 @@ const test = () => {
 .user-area {
     width: 360px;
     background-color: rgb(109, 109, 255);
+    overflow: auto;
 }
 
-.self-user {
+.user-area .search {
+    width: 100%;
+    height: 8%;
+    background-color: red;
+    padding: 0 10px;
     display: flex;
-    padding: 10px;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.user-area .search span {
+    display: block;
+    color: black;
+    border: 1px solid black;
+    border-radius: 5px;
+    font-size: 20px;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    cursor: default;
+    transition: all 0.3s ease;
+}
+
+.user-area .search span:hover {
+    color: white;
+    background-color: black;
 }
 
 .chat-area {
