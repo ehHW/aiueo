@@ -9,7 +9,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useChatStore } from '@/stores/useChat';
+// import { useChatStore } from '@/stores/useChat';
 import {
     getFriendListApi,
     addFriendApi,
@@ -17,7 +17,7 @@ import {
     getFriendRequestListApi,
  } from '@/api/friend';
 
-const chatStore = useChatStore();
+// const chatStore = useChatStore();
 
 
 const getFriendList = () => {
