@@ -4,14 +4,18 @@ import { defineStore } from 'pinia'
 export const useChatStore = defineStore(
     'chat',
     () => {
-        const toolBar = reactive({
+        type toolBarType = {
+            contactList: boolean
+            sessionList: boolean
+        }
+        const toolBar = reactive<toolBarType>({
             contactList: false,
             sessionList: true,
         })
 
-        const toggleToolBar = (key: string) => {
+        const toggleToolBar = (key: keyof toolBarType) => {
             for (const k in toolBar) {
-                toolBar[k] = false
+                toolBar[k as keyof toolBarType] = false
             }
             toolBar[key] = true
         }

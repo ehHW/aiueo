@@ -21,14 +21,6 @@ socket.onopen = () => {
 
 socket.onclose = () => {
     console.log("连接断开");
-    // const retryTimer = setInterval(() => {
-    //     if (socket.readyState !== WebSocket.OPEN) {
-    //         console.log("尝试重新连接...");
-
-    //     } else {
-    //         clearInterval(retryTimer);
-    //     }
-    // }, 5000); // 每5秒尝试重新连接一次
 }
 
 socket.onmessage = (event) => {
