@@ -182,6 +182,10 @@ const uploadHttpRequest = () => { }
 :deep(.el-input__wrapper) {
     background-color: var(--my-main-search-bg-color) !important;
 }
+
+:deep(.el-form-item__content button:nth-child(2)) {
+    --el-button-text-color: rgb(91 91 91)
+}
 </style>
 
 <style>

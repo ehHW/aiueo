@@ -29,31 +29,23 @@ import { useUserStore } from '@/stores/useUser'
 const init = async () => {
     const userStore = useUserStore()
     const modules = userStore.modules
-    await userStore.refreshToken().then(async (res) => {
-        if (res) {
-            await getMenuApi().then(
-                (res2) => {
-                    if (res2.data.state === 200) {
-                        // console.log(res2.data.data)
-                        for (const item of res2.data.data) {
-                            for (const child of item.children) {
-                                // console.log(modules[`..${child.component.slice(1)}`])
-                                router.addRoute('Layout', {
-                                    path: child.path,
-                                    component: modules[`..${child.component.slice(1)}`],
-                                    meta: { name1: item.auth_name, name2: child.auth_name },
-                                })
-                            }
-                        }
-                    }
-                },
-                (error) => {
-                    if (error.status === 401) {
-                        userStore.logout()
-                    }
-                },
-            )
-        } else {
+    await getMenuApi().then((res2) => {
+        if (res2.data.state === 200) {
+            // console.log(res2.data.data)
+            for (const item of res2.data.data) {
+                for (const child of item.children) {
+                    // console.log(modules[`..${child.component.slice(1)}`])
+                    router.addRoute('Layout', {
+                        path: child.path,
+                        component: modules[`..${child.component.slice(1)}`],
+                        meta: { name1: item.auth_name, name2: child.auth_name },
+                    })
+                }
+            }
+        }
+    },
+    (error) => {
+        if (error.status === 401) {
             userStore.logout()
         }
     })

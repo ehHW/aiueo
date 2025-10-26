@@ -1,11 +1,19 @@
 <template>
     <div class="chat-menu">
-        <p class="iconfont icon-xiaoxi active"></p>
-        <p class="iconfont icon-biaoqing"></p>
+        <p :class="`
+        iconfont icon-xiaoxi
+        ${ chatStore.mode.message ? 'active': '' }
+         `" @click="chatStore.changeMode('message')"></p>
+        <p :class="`
+        iconfont icon-biaoqing
+        ${ chatStore.mode.contact ? 'active': '' }
+         `" @click="chatStore.changeMode('contact')"></p>
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { useChatStore } from '@/stores/useChat';
+const chatStore = useChatStore();
 </script>
 
 <style scoped>
@@ -42,5 +50,4 @@
     color: red;
     background-color: black;
 }
-
 </style>

@@ -1,8 +1,16 @@
 <template>
     <div class="chat-container">
-        <ChatMenu />
-        <ConversationList />
-        <Conversation />
+        <el-splitter>
+            <el-splitter-panel size="50" :resizable="false">
+                <ChatMenu />
+            </el-splitter-panel>
+            <el-splitter-panel min="180" size="250" max="260">
+                <ConversationList />
+            </el-splitter-panel>
+            <el-splitter-panel>
+                <Conversation />
+            </el-splitter-panel>
+        </el-splitter>
     </div>
 </template>
 
@@ -19,6 +27,10 @@ import Conversation from './Conversation.vue';
     display: flex;
     border-radius: 7px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
+    overflow: auto;
+}
+
+:deep(.el-splitter-panel) {
+    overflow: auto;
 }
 </style>

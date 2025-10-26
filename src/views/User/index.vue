@@ -337,7 +337,6 @@ const getData = async (pagenum: number = 1, pagesize: number = 10) => {
     const update_at1 = formInline.date2[0] ? new Date(formInline.date2[0]).getTime() : ''
     const update_at2 = formInline.date2[1] ? new Date(formInline.date2[1]).getTime() : ''
     let res: AxiosResponse<UserListResponse<UserListData[]>> = await getUserListApi({
-        user_id: userStore.userInfo.user_id,
         pagenum,
         pagesize,
         username: formInline.username,
@@ -346,7 +345,7 @@ const getData = async (pagenum: number = 1, pagesize: number = 10) => {
         created_at: create_at1 + '-' + create_at2,
         updated_at: update_at1 + '-' + update_at2,
     })
-    tableData.value = res.data.list?.reverse() || []
+    tableData.value = res.data.list || []
     console.log(res.data)
     resData.value = res.data
 }
@@ -599,6 +598,10 @@ const resetFormRole = (formEl: FormInstance | undefined) => {
 
 :deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
     max-height: calc(100% - 20px) !important;
+}
+
+:deep(.el-form-item__content button:nth-child(2)) {
+    --el-button-text-color: rgb(91 91 91)
 }
 </style>
 

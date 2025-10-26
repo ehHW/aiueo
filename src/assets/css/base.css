@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+ul {
+    list-style-type: none;
+}
+
 html,
 body,
 #app {
@@ -22,6 +26,7 @@ body,
     --hover-text-color: #46a1ff;
 
     --header-bg-color: #fff;
+    --header-text-color: black;
     --layout-content-bg-bg-color: #e4e4e4;
     --layout-content-bg-color: #f1f1f1;
 
@@ -67,6 +72,7 @@ body,
     --hover-text-color: #46a1ff;
 
     --header-bg-color: #001529;
+    --header-text-color: #fff;
     --layout-content-bg-bg-color: black;
     --layout-content-bg-color: #27253b;
 

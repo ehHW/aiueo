@@ -2,7 +2,7 @@
     <div class="create-user">
         <div class="create-user-title">
             <span>角色创建</span>
-            <el-button type="default" @click="router.push('/role')" size="default">返回</el-button>
+            <el-button type="primary" @click="router.push('/role')" size="default">返回</el-button>
         </div>
         <el-form ref="ruleFormRef" :model="ruleForm" status-icon :rules="rules" label-width="80px"
             class="demo-ruleForm">
@@ -116,6 +116,10 @@ const resetForm = (formEl: FormInstance | undefined) => {
 
 :deep(.el-input__wrapper) {
     background-color: var(--my-main-search-bg-color) !important;
+}
+
+:deep(.el-form-item__content button:nth-child(2)) {
+    --el-button-text-color: rgb(91 91 91)
 }
 </style>
 

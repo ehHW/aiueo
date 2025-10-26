@@ -48,7 +48,6 @@ interface UserListData {
 }
 
 interface UserListParams {
-    user_id: number | string
     pagenum: number
     pagesize: number
     username: string
