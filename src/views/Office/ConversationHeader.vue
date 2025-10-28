@@ -20,12 +20,16 @@
                 <template #overlay>
                     <a-menu style="background-color: var(--my-main-search-bg-color)">
                         <a-menu-item>
-                            <span @click="centerDialogVisible = true" style="color: var(--header-text-color);">
+                            <span @click="addFriendDialogVisible = true" style="color: var(--header-text-color);">
                                 添加好友
                             </span>
                         </a-menu-item>
                         <a-menu-item>
-                            <span @click="createGroup" style="color: var(--header-text-color);">
+                            <span @click="{
+                                createGroupDialogVisible = true;
+                                selfData = initUserList.find(item => item.user_id === userStore.userInfo.user_id)
+                                groupCheckedList = [selfData as UserListData]
+                                }" style="color: var(--header-text-color);">
                                 创建群聊
                             </span>
                         </a-menu-item>
@@ -33,19 +37,13 @@
                 </template>
             </a-dropdown>
         </template>
-            <!-- <el-button plain @click="addFriend(0)">添加好友</el-button>
-            <el-button plain @click="createGroup">创建群聊</el-button>
-            <el-button plain>Primary</el-button>
-            <el-button plain @click="getFriendList">获取好友列表</el-button>
-            <el-button plain @click="getFriendRequestList">获取好友请求列表</el-button>
-            <el-button plain @click="handleFriendRequest('accept', 3)">接受好友请求</el-button>
-            <el-button plain @click="handleFriendRequest('decline', 3)">拒绝好友请求</el-button> -->
         <el-dialog
-            v-model="centerDialogVisible"
+            v-model="addFriendDialogVisible"
             title=""
             width="500"
             align-center
             style="padding: 5px; background-color: var(--my-main-search-bg-color)"
+            @closed="checkList = []"
         >
             <div class="add-friend-panel">
                 <div class="add-friend-panel-left">
@@ -54,7 +52,7 @@
                     </div>
                     <div class="add-friend-panel-left-body">
                         <el-checkbox-group v-model="checkList">
-                            <p v-for="(userItem, index) in userList" :key="index">
+                            <p v-for="userItem in userList" :key="userItem.user_id">
                                 <el-checkbox :label="userItem.username" :value="userItem" />
                             </p>
                         </el-checkbox-group>
@@ -62,7 +60,12 @@
                 </div>
                 <div class="add-friend-panel-right">
                     <div class="add-friend-panel-right-header">
-
+                        <div class="add-friend-panel-right-header-title">
+                            添加好友
+                        </div>
+                        <div class="add-friend-panel-right-header-checkedNum">
+                            已选{{ checkList.length }}个联系人
+                        </div>
                     </div>
                     <div class="add-friend-panel-right-body">
                         <p v-for="item in checkList" :key="item.user_id">
@@ -72,12 +75,65 @@
                     </div>
                     <div class="add-friend-panel-right-footer">
                         <el-button type="primary" @click="{
-                            centerDialogVisible = false;
-                            checkList.forEach(checkedUser => addFriend(checkedUser.user_id))
+                            addFriendDialogVisible = false;
+                            checkList.forEach(checkedUser => addFriend(checkedUser.user_id));
+                            checkList = []
                             }">
                             确认
                         </el-button>
-                        <el-button @click="centerDialogVisible = false">取消</el-button>
+                        <el-button @click="addFriendDialogVisible = false">取消</el-button>
+                    </div>
+                </div>
+            </div>
+        </el-dialog>
+        <el-dialog
+            v-model="createGroupDialogVisible"
+            title=""
+            width="500"
+            align-center
+            style="padding: 5px; background-color: var(--my-main-search-bg-color)"
+            @closed="groupCheckedList = []"
+        >
+            <div class="add-friend-panel">
+                <div class="add-friend-panel-left">
+                    <div class="add-friend-panel-left-header">
+                        <el-input v-model="addFriendPanelLeftValue"></el-input>
+                    </div>
+                    <div class="add-friend-panel-left-body">
+                        <el-checkbox-group v-model="groupCheckedList">
+                            <p v-for="userItem in userList" :key="userItem.user_id">
+                                <el-checkbox
+                                :label="userItem.username"
+                                :value="userItem"
+                                :disabled="userItem.user_id === userStore.userInfo.user_id"/>
+                            </p>
+                        </el-checkbox-group>
+                    </div>
+                </div>
+                <div class="add-friend-panel-right">
+                    <div class="add-friend-panel-right-header">
+                        <div class="add-friend-panel-right-header-title">创建群聊</div>
+                        <div class="add-friend-panel-right-header-checkedNum">
+                            已选{{ groupCheckedList.length }}个联系人
+                        </div>
+                    </div>
+                    <div class="add-friend-panel-right-body">
+                        <p v-for="item in groupCheckedList" :key="item.user_id" v-show="item.user_id !== userStore.userInfo.user_id">
+                            <span>{{ item.username }}</span>
+                            <span class="delete-checked"
+                            @click="groupCheckedList = groupCheckedList.filter((userItem) => userItem !== item)"
+                            >x</span>
+                        </p>
+                    </div>
+                    <div class="add-friend-panel-right-footer">
+                        <el-button type="primary" @click="{
+                            createGroupDialogVisible = false;
+                            createGroup(groupCheckedList.map(item => item.user_id))
+                            groupCheckedList = []
+                            }" :disabled="groupCheckedList.length < 2">
+                            确认
+                        </el-button>
+                        <el-button @click="createGroupDialogVisible = false">取消</el-button>
                     </div>
                 </div>
             </div>
@@ -88,15 +144,18 @@
 <script setup lang="ts">
 import {
     addFriendApi,
+    createGroupApi,
 } from '@/api/friend';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DropdownProps } from 'ant-design-vue';
 import { getUserListApi } from '@/api/user';
 import type { UserListData, UserListResponse } from '@/types/user';
 import type { AxiosResponse } from 'axios';
+import { useUserStore } from '@/stores/useUser';
 const placements = ['bottomLeft'] as DropdownProps['placement'][];
 
-const centerDialogVisible = ref(false)
+const addFriendDialogVisible = ref(false)
+const createGroupDialogVisible = ref(false)
 
 const searchValue = ref<string>('')
 const searchDropDown = ref(false)
@@ -145,8 +204,6 @@ watch(() => addFriendPanelLeftValue.value, (newVal) => {
 })
 
 const checkList = ref<UserListData[]>([])
-
-
 const addFriend = (receiverId: number) => {
     addFriendApi(receiverId).then((res) => {
         // console.log('添加好友请求:', res.data);
@@ -157,8 +214,16 @@ const addFriend = (receiverId: number) => {
     });
 }
 
-const createGroup = () => {
-    console.log('createGroup');
+const userStore = useUserStore();
+const selfData = ref<UserListData>();
+const groupCheckedList = ref<UserListData[]>([]);
+const createGroup = (member_ids: number[]) => {
+    createGroupApi({
+        name: JSON.stringify(member_ids),
+        member_ids: JSON.stringify(member_ids)
+    }).then(res => {
+        console.log(res);
+    })
 }
 </script>
 
@@ -277,12 +342,19 @@ const createGroup = () => {
 
 .add-friend-panel-right-header {
     height: 30px;
-    background-color: red;
+    /* background-color: red; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    color: var(--header-text-color);
+    font-size: 14px;
 }
 
 .add-friend-panel-right-body {
     width: 100%;
     height: calc(90% - 30px);
+    overflow: auto;
     /* background-color: #4096ff; */
 }
 

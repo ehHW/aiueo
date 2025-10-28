@@ -1,12 +1,20 @@
 <template>
     <div class="session-list">
         <ul>
-            <li v-for="(item, index) in 20" :key="index">{{ item }}</li>
+            <li v-for="session in chatStore.sessionList" :key="session.id">
+                {{ session.title }}
+            </li>
         </ul>
     </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useChatStore } from '@/stores/useChat';
+
+
+const chatStore = useChatStore();
+chatStore.getSessionList();
+</script>
 
 <style scoped>
 .session-list {

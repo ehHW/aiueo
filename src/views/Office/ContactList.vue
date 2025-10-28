@@ -1,7 +1,7 @@
 <template>
     <div class="contact-list">
         <ul>
-            <li v-for="friend in friendList" :key="friend.user_id">
+            <li v-for="friend in friendList" :key="friend.user_id" @dblclick="getOrCreatePrivate(friend.user_id)">
                 <div class="avatar">
                     <img src="@/assets/img/miao.png" />
                 </div>
@@ -14,9 +14,9 @@
 </template>
 
 <script setup lang="ts">
-import { getFriendListApi } from '@/api/friend';
+import { getFriendListApi, getOrCreatePrivateApi } from '@/api/friend';
 import type { FriendData } from '@/types/chat';
-import { ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 const friendList = ref<FriendData[]>([])
 const getFriendList = () => {
@@ -27,7 +27,15 @@ const getFriendList = () => {
         console.error('获取好友列表失败:', error);
     });
 }
-getFriendList()
+
+onBeforeMount(() => getFriendList())
+
+
+const getOrCreatePrivate = (target_id: number) => {
+    getOrCreatePrivateApi({target_id}).then(res => {
+        console.log(res);
+    })
+}
 </script>
 
 <style scoped>

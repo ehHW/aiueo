@@ -3,7 +3,11 @@
         <el-splitter layout="vertical" v-show="chatStore.mode.message">
             <el-splitter-panel>
                 <div class="content-area">
-                    123
+                    <ul>
+                        <li v-for="(mesg, index) in msgList" :key="index">
+                            {{ mesg }}
+                        </li>
+                    </ul>
                 </div>
             </el-splitter-panel>
             <el-splitter-panel size="40%" min="30%" max="50%">
@@ -44,14 +48,11 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from "vue";
-import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket';
 import { useChatStore } from "@/stores/useChat";
 import { getFriendRequestListApi, handleFriendRequestApi } from "@/api/friend";
 import type { FriendRequestData } from "@/types/chat";
 
 const chatStore = useChatStore()
-
-
 
 const friendRequestList = ref<FriendRequestData[]>([])
 const getFriendRequestList = () => {
@@ -66,9 +67,13 @@ getFriendRequestList();
 
 const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => {
     handleFriendRequestApi(action, senderId).then((res) => {
-        console.log(`处理好友请求 ${action}:`, res.data);
+        // console.log(`处理好友请求 ${action}:`, res.data);
+        getFriendRequestList();
+        ElMessage.success('好友请求已接受')
     }).catch((error) => {
-        console.error(`处理好友请求 ${action} 失败:`, error);
+        // console.error(`处理好友请求 ${action} 失败:`, error);
+        getFriendRequestList();
+        ElMessage.success('好友请求已拒绝')
     });
 }
 
@@ -77,16 +82,7 @@ const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => 
 
 const msgList = ref<string[]>([]);
 let msg = ref<string>("");
-
-const roomName = "testroom";
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const wsURL = `${protocol}//${window.location.host}/chat/channel/${roomName}/`
-
-const ws = new ReconnectingWebSocket(
-    wsURL,
-    { maxRetries: 5, heartbeatInterval: 25000 }
-);
-
+const ws = chatStore.ws
 ws.onopen = () => {
     console.log('连接成功');
 }
