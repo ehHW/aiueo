@@ -72,6 +72,17 @@ interface CreateGroupResponseData {
     conversation_id: number
 }
 
+interface GetMessageListParams {
+    conversation_id: number
+    last_msg_id?: number
+    limit?: number
+}
+
+interface GetMessageListResponse {
+    state: number
+    msg: string
+}
+
 export {
     wsMsg,
     FriendRequestData,
@@ -84,5 +95,5 @@ export {
     SessionData,
     CreateGroupParams,
     CreateGroupResponse,
-
+    GetMessageListParams
 }

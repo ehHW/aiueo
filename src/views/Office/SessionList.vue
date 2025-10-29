@@ -1,7 +1,10 @@
 <template>
     <div class="session-list">
         <ul>
-            <li v-for="session in chatStore.sessionList" :key="session.id">
+            <li
+            v-for="session in sessionStore.sessionList"
+            :key="session.id"
+            @dblclick="changeSession(session)">
                 {{ session.title }}
             </li>
         </ul>
@@ -9,11 +12,22 @@
 </template>
 
 <script setup lang="ts">
-import { useChatStore } from '@/stores/useChat';
+import { useMessageStore } from '@/stores/useMessage';
+import { useSessionStore } from '@/stores/useSession';
+import { onMounted, toRefs, watch } from 'vue';
 
 
-const chatStore = useChatStore();
-chatStore.getSessionList();
+const sessionStore = useSessionStore();
+const messageStore = useMessageStore();
+const { SessionInfo, changeSession } = toRefs(sessionStore);
+watch(() => SessionInfo.value, () => {
+    messageStore.getMessageList({
+        conversation_id: SessionInfo.value.id
+    })
+    sessionStore.changeConvId(SessionInfo.value.id)
+})
+
+onMounted(() => sessionStore.getSessionList())
 </script>
 
 <style scoped>
@@ -39,6 +53,6 @@ chatStore.getSessionList();
 }
 
 .session-list ul li:nth-child(n+2) {
-    margin-top: 10px;
+    margin-top: 5px;
 }
 </style>

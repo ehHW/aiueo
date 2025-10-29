@@ -5,6 +5,7 @@ import type {
     FriendListResponse,
     FriendRequestData,
     FriendRequestResponse,
+    GetMessageListParams,
     GetOrCreatePrivateParams,
     GetOrCreatePrivateResponse
 } from '@/types/chat'
@@ -29,7 +30,7 @@ export const handleFriendRequestApi = (action: 'accept' | 'decline', sender_id: 
 
 export const getFriendRequestListApi = (type: 'in' | 'out' = 'in') => {
     return instance.get<FriendRequestResponse<FriendRequestData[]>>('/chat/friends/request/list/', {
-        data: {
+        params: {
             type
         }
     })
@@ -45,4 +46,10 @@ export const getOrCreatePrivateApi = (data: GetOrCreatePrivateParams) => {
 
 export const createGroupApi = (data: CreateGroupParams) => {
     return instance.post<CreateGroupResponse>('/chat/conversations/group/', data)
+}
+
+export const getMessageListApi = (data: GetMessageListParams) => {
+    return instance.get('/chat/messages/', {
+        params: data
+    })
 }

@@ -15,25 +15,27 @@
 
 <script setup lang="ts">
 import { getFriendListApi, getOrCreatePrivateApi } from '@/api/friend';
+import { useChatStore } from '@/stores/useChat';
 import type { FriendData } from '@/types/chat';
-import { onBeforeMount, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const friendList = ref<FriendData[]>([])
 const getFriendList = () => {
     getFriendListApi().then((res) => {
-        console.log('获取好友列表:', res.data.data);
+        // console.log('获取好友列表:', res.data.data);
         friendList.value = res.data.data
     }).catch((error) => {
         console.error('获取好友列表失败:', error);
     });
 }
 
-onBeforeMount(() => getFriendList())
+onMounted(() => getFriendList())
 
-
+const chatStore = useChatStore()
 const getOrCreatePrivate = (target_id: number) => {
     getOrCreatePrivateApi({target_id}).then(res => {
-        console.log(res);
+        chatStore.conv_id = res.data.data.conversation_id
+        chatStore.changeMode('message')
     })
 }
 </script>

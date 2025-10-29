@@ -346,7 +346,7 @@ const getData = async (pagenum: number = 1, pagesize: number = 10) => {
         updated_at: update_at1 + '-' + update_at2,
     })
     tableData.value = res.data.list || []
-    console.log(res.data)
+    // console.log(res.data)
     resData.value = res.data
 }
 getData(pagenum.value, pagesize.value)

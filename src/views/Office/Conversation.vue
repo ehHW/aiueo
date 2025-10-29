@@ -3,11 +3,16 @@
         <el-splitter layout="vertical" v-show="chatStore.mode.message">
             <el-splitter-panel>
                 <div class="content-area">
-                    <ul>
-                        <li v-for="(mesg, index) in msgList" :key="index">
-                            {{ mesg }}
-                        </li>
-                    </ul>
+                    <div class="content-header">
+                        <span>{{ sessionStore.SessionInfo.title }}</span>
+                    </div>
+                    <div class="content-body">
+                        <ul>
+                            <li v-for="(mesg, index) in msgList" :key="index">
+                                {{ mesg }}
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </el-splitter-panel>
             <el-splitter-panel size="40%" min="30%" max="50%">
@@ -21,14 +26,14 @@
                         />
                     </div>
                     <div class="input-footer">
-                        <el-button @click="send(msg)" type="primary" size="small">send</el-button>
+                        <el-button @click="send()" type="primary" size="small">send</el-button>
                     </div>
                 </div>
             </el-splitter-panel>
         </el-splitter>
         <div class="request-friend-list" v-show="chatStore.mode.contact">
             <ul>
-                <li v-for="sender in friendRequestList" :key="sender.sender_id">
+                <li v-for="sender in chatStore.friendRequestList" :key="sender.sender_id">
                     <div class="request-friend-list-avatar">
                         <el-image :src="sender.sender_avatar" />
                     </div>
@@ -47,57 +52,85 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from "vue";
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
-import { getFriendRequestListApi, handleFriendRequestApi } from "@/api/friend";
-import type { FriendRequestData } from "@/types/chat";
+import { handleFriendRequestApi } from "@/api/friend";
+import { useSessionStore } from '@/stores/useSession';
 
 const chatStore = useChatStore()
-
-const friendRequestList = ref<FriendRequestData[]>([])
-const getFriendRequestList = () => {
-    getFriendRequestListApi().then((res) => {
-        friendRequestList.value = res.data.data
-        // console.log('获取好友请求列表:', friendRequestList.value);
-    }).catch((error) => {
-        console.error('获取好友请求列表失败:', error);
-    });
-}
-getFriendRequestList();
+const sessionStore = useSessionStore()
 
 const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => {
-    handleFriendRequestApi(action, senderId).then((res) => {
+    handleFriendRequestApi(action, senderId).then(() => {
         // console.log(`处理好友请求 ${action}:`, res.data);
-        getFriendRequestList();
+        chatStore.getFriendRequestList();
         ElMessage.success('好友请求已接受')
-    }).catch((error) => {
+    }).catch(() => {
         // console.error(`处理好友请求 ${action} 失败:`, error);
-        getFriendRequestList();
+        chatStore.getFriendRequestList();
         ElMessage.success('好友请求已拒绝')
     });
 }
 
 
-
-
 const msgList = ref<string[]>([]);
 let msg = ref<string>("");
-const ws = chatStore.ws
-ws.onopen = () => {
-    console.log('连接成功');
+
+const ws = ref<ReconnectingWebSocket | null>(null)
+/* ---------- 收发消息 ---------- */
+function send() {
+    const text = msg.value.trim()
+    if (!text || !ws.value) return
+    ws.value.send(JSON.stringify({ type: 'chat', text }))
+    msg.value = ''
+}
+/* ---------- 统一的事件回调（静态，避免闭包旧实例） ---------- */
+const handleOpen = () => console.log('✅ WebSocket opened')
+const handleClose = () => console.log('❌ WebSocket closed')
+const handleError = () => console.log('⚠️ WebSocket error')
+const handleMessage = (e: MessageEvent<string>) => {
+    msgList.value.push(e.data)
+}
+/* ---------- 创建/销毁连接 ---------- */
+function makeWs(id: number) {
+  // 如果已有连接，先强制关闭
+    if (ws.value) {
+        ws.value.close(1000, 'switch room')
+        ws.value = null
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = `${protocol}//${window.location.host}/chat/channel/${id}/`
+
+    const instance = new ReconnectingWebSocket(url, {
+        maxRetries: 5,
+        heartbeatInterval: 25000
+    })
+
+    // 绑定事件
+    instance.onopen = handleOpen
+    instance.onclose = handleClose
+    instance.onerror = handleError
+    instance.onmessage = handleMessage
+
+    ws.value = instance
 }
 
-ws.onmessage = (ev) => {
-    if (ev.data === '__pong__') return;          // 心跳
-    const msg = JSON.parse(ev.data).msg;        // 聊天消息
-    msgList.value.push(msg);
-};
-
-function send(msg: string) {
-    ws.send(JSON.stringify({ msg }));
+/* ---------- 切换房间 ---------- */
+function changeRoom() {
+    console.log(`🔄  switching to room ${sessionStore.conv_id}`)
+    makeWs(sessionStore.conv_id)
 }
 
-onBeforeUnmount(() => ws.close());
+watch(() => sessionStore.conv_id, () => {
+    changeRoom()
+})
+
+/* ---------- 生命周期 ---------- */
+onMounted(() => makeWs(sessionStore.conv_id))
+onUnmounted(() => ws.value?.close())
+
 </script>
 
 <style scoped>
@@ -109,9 +142,24 @@ onBeforeUnmount(() => ws.close());
 
 .content-area {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     height: 100%;
+}
+
+.content-header {
+    width: 100%;
+    height: 50px;
+    padding: 0 10px;
+    /* background-color: aqua; */
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgb(55, 55, 55);
+}
+
+.content-body {
+    width: 100%;
+    height: calc(100% - 50px);
+    overflow: auto;
 }
 
 .input-area {

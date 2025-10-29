@@ -13,7 +13,18 @@
 
 <script setup lang="ts">
 import { useChatStore } from '@/stores/useChat';
+import { useSessionStore } from '@/stores/useSession';
+import { watch } from 'vue';
 const chatStore = useChatStore();
+const sessionStore = useSessionStore()
+
+watch(() => chatStore.mode.message, (newVal) => {
+    if (newVal) {
+        sessionStore.getSessionList()
+    } else {
+        chatStore.getFriendRequestList()
+    }
+})
 </script>
 
 <style scoped>
