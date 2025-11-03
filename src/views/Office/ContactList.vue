@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { getFriendListApi, getOrCreatePrivateApi } from '@/api/friend';
 import { useChatStore } from '@/stores/useChat';
+import { useSessionStore } from '@/stores/useSession';
 import type { FriendData } from '@/types/chat';
 import { onMounted, ref } from 'vue';
 
@@ -32,9 +33,10 @@ const getFriendList = () => {
 onMounted(() => getFriendList())
 
 const chatStore = useChatStore()
+const sessionStore = useSessionStore()
 const getOrCreatePrivate = (target_id: number) => {
     getOrCreatePrivateApi({target_id}).then(res => {
-        chatStore.conv_id = res.data.data.conversation_id
+        sessionStore.conv_id = res.data.data.conversation_id
         chatStore.changeMode('message')
     })
 }

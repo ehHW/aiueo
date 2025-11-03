@@ -6,6 +6,7 @@ import type {
     FriendRequestData,
     FriendRequestResponse,
     GetMessageListParams,
+    GetMessageListResponse,
     GetOrCreatePrivateParams,
     GetOrCreatePrivateResponse
 } from '@/types/chat'
@@ -49,7 +50,7 @@ export const createGroupApi = (data: CreateGroupParams) => {
 }
 
 export const getMessageListApi = (data: GetMessageListParams) => {
-    return instance.get('/chat/messages/', {
+    return instance.get<GetMessageListResponse>('/chat/messages/', {
         params: data
     })
 }

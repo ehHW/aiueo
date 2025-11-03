@@ -1,20 +1,34 @@
 <template>
     <div class="conversation">
         <el-splitter layout="vertical" v-show="chatStore.mode.message">
+            <!-- 展示区 -->
             <el-splitter-panel>
                 <div class="content-area">
                     <div class="content-header">
                         <span>{{ sessionStore.SessionInfo.title }}</span>
                     </div>
-                    <div class="content-body">
+                    <div class="content-body" ref="contentBody" @scroll="onScroll">
                         <ul>
-                            <li v-for="(mesg, index) in msgList" :key="index">
-                                {{ mesg }}
+                            <li
+                            v-for="msgItem in messageStore.messageList"
+                            :key="msgItem.id"
+                            :class="msgItem.sender_id === userStore.userInfo.user_id ? 'selfuser' : 'targetuser'"
+                            >
+                                <div class="user-avatar" v-if="!(msgItem.sender_id === userStore.userInfo.user_id)">
+                                    <img src="@/assets/img/miao.png" alt="">
+                                </div>
+                                <div class="content">
+                                    {{ msgItem.content }}
+                                </div>
+                                <div class="user-avatar" v-if="msgItem.sender_id === userStore.userInfo.user_id">
+                                    <img src="@/assets/img/miao.png" alt="">
+                                </div>
                             </li>
                         </ul>
                     </div>
                 </div>
             </el-splitter-panel>
+            <!-- 输入区 -->
             <el-splitter-panel size="40%" min="30%" max="50%">
                 <div class="input-area">
                     <div class="input-header">
@@ -23,6 +37,7 @@
                     <div class="input-body">
                         <a-textarea
                         v-model:value="msg"
+                        @keyup.enter.prevent="send()"
                         />
                     </div>
                     <div class="input-footer">
@@ -52,14 +67,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick } from 'vue'
 import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
 import { handleFriendRequestApi } from "@/api/friend";
 import { useSessionStore } from '@/stores/useSession';
+import { useMessageStore } from '@/stores/useMessage';
+import { useUserStore } from '@/stores/useUser';
 
 const chatStore = useChatStore()
 const sessionStore = useSessionStore()
+const messageStore = useMessageStore()
+const userStore = useUserStore()
+const contentBody = useTemplateRef('contentBody')
 
 const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => {
     handleFriendRequestApi(action, senderId).then(() => {
@@ -73,10 +93,24 @@ const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => 
     });
 }
 
+/* 滚动监听 */
+let prevScrollTop = 0
+const onScroll = (e: Event) => {
+    const el = e.target as HTMLDivElement
+    const toTop = el.scrollTop <= 0 && prevScrollTop >= 0
+    prevScrollTop = el.scrollTop
 
-const msgList = ref<string[]>([]);
+    if (toTop) {
+        // 记录当前高度，用于加载后保持滚动位置
+        const oldHeight = el.scrollHeight
+        messageStore.loadMoreHistory(sessionStore.SessionInfo.id)?.then(() => {
+            nextTick(() => { el.scrollTop = el.scrollHeight - oldHeight })
+        })
+    }
+}
+
+
 let msg = ref<string>("");
-
 const ws = ref<ReconnectingWebSocket | null>(null)
 /* ---------- 收发消息 ---------- */
 function send() {
@@ -89,8 +123,9 @@ function send() {
 const handleOpen = () => console.log('✅ WebSocket opened')
 const handleClose = () => console.log('❌ WebSocket closed')
 const handleError = () => console.log('⚠️ WebSocket error')
-const handleMessage = (e: MessageEvent<string>) => {
-    msgList.value.push(e.data)
+const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
+    messageStore.messageList.push(JSON.parse(e.data).msg);
+    nextTick(() => contentBody.value?.scrollTo({top: contentBody.value.scrollHeight}))
 }
 /* ---------- 创建/销毁连接 ---------- */
 function makeWs(id: number) {
@@ -125,10 +160,20 @@ function changeRoom() {
 
 watch(() => sessionStore.conv_id, () => {
     changeRoom()
+    messageStore.getMessageList({
+        conversation_id: sessionStore.conv_id,
+        limit: 50
+    })
 })
 
 /* ---------- 生命周期 ---------- */
-onMounted(() => makeWs(sessionStore.conv_id))
+onMounted(() => {
+    makeWs(sessionStore.conv_id)
+    messageStore.getMessageList({
+        conversation_id: sessionStore.conv_id,
+        limit: 50
+    })
+})
 onUnmounted(() => ws.value?.close())
 
 </script>
@@ -156,11 +201,68 @@ onUnmounted(() => ws.value?.close())
     border-bottom: 1px solid rgb(55, 55, 55);
 }
 
+.content-header {
+    font-weight: bold;
+    color: var(--header-text-color)
+}
+
 .content-body {
     width: 100%;
     height: calc(100% - 50px);
     overflow: auto;
+    color: var(--header-text-color)
 }
+
+.content-body ul {
+    width: 100%;
+}
+
+.content-body ul li {
+    width: 100%;
+    display: flex;
+    padding: 7px 10px;
+}
+
+.content-body ul li:nth-child(n+2) {
+    margin-top: 5px;
+}
+
+.user-avatar {
+    img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+}
+
+.content-body ul li.selfuser {
+    justify-content: end;
+    background-color: aqua;
+}
+
+.content-body ul li.targetuser {
+    justify-content: start;
+    background-color: greenyellow;
+}
+
+.content-body ul li.selfuser .content {
+    margin: 0 8px 0 40px;
+    background-color: red;
+}
+
+.content-body ul li.targetuser .content {
+    margin: 0 0 0 8px;
+    background-color: red;
+}
+
+.content {
+    border-radius: 5px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
 
 .input-area {
     width: 100%;
@@ -188,7 +290,7 @@ onUnmounted(() => ws.value?.close())
     overflow: auto;
 }
 
-:deep(.ant-input.css-dev-only-do-not-override-1p3hq3p) {
+textarea {
     width: 100%;
     height: 100%;
     resize: none;

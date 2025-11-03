@@ -1,5 +1,6 @@
 <template>
     <div class="conversation-header">
+        <!-- 下拉框 - 搜索会话 -->
         <el-input
             class="convsersation-search-input"
             ref="searchInputRef"
@@ -14,6 +15,7 @@
                 <li v-for="(item, index) in 10" :key="index">{{ item }}</li>
             </ul>
         </div>
+        <!-- 下拉菜单 - 加好友/建群 -->
         <template v-for="(placement) in placements" :key="placement">
             <a-dropdown :placement="placement">
                 <a-button size="small">+</a-button>
@@ -37,6 +39,7 @@
                 </template>
             </a-dropdown>
         </template>
+        <!-- 加好友 -->
         <el-dialog
             v-model="addFriendDialogVisible"
             title=""
@@ -86,6 +89,7 @@
                 </div>
             </div>
         </el-dialog>
+        <!-- 建群 -->
         <el-dialog
             v-model="createGroupDialogVisible"
             title=""
@@ -128,7 +132,7 @@
                     <div class="add-friend-panel-right-footer">
                         <el-button type="primary" @click="{
                             createGroupDialogVisible = false;
-                            createGroup(groupCheckedList.map(item => item.user_id))
+                            createGroup(groupCheckedList)
                             groupCheckedList = []
                             }" :disabled="groupCheckedList.length < 2">
                             确认
@@ -152,17 +156,19 @@ import { getUserListApi } from '@/api/user';
 import type { UserListData, UserListResponse } from '@/types/user';
 import type { AxiosResponse } from 'axios';
 import { useUserStore } from '@/stores/useUser';
+import { useSessionStore } from '@/stores/useSession';
+const sessionStore = useSessionStore();
 const placements = ['bottomLeft'] as DropdownProps['placement'][];
 
 const addFriendDialogVisible = ref(false)
 const createGroupDialogVisible = ref(false)
 
+
+/* 下拉框 - 搜索会话 */
 const searchValue = ref<string>('')
 const searchDropDown = ref(false)
 const searchInputRef  = ref()
 const searchDropDownRef = ref<HTMLElement>()
-
-/* 点击页面任意处 */
 const onClick = (e: MouseEvent) => {
   const tar = e.target as Node
   const inputEl = searchInputRef.value?.$el      // el-input 根节点
@@ -174,14 +180,14 @@ const onClick = (e: MouseEvent) => {
   // 否则关闭
   searchDropDown.value = false
 }
-
 onMounted(() => document.addEventListener('click', onClick))
 onBeforeUnmount(() => document.removeEventListener('click', onClick))
 
+
+// 加好友/建群 - 用户列表
 const initUserList = ref<UserListData[]>([])
 const userList = ref<UserListData[]>([])
 const addFriendPanelLeftValue = ref('')
-
 const getUserList = async () => {
     let res: AxiosResponse<UserListResponse<UserListData[]>> = await getUserListApi({
         pagenum: 1,
@@ -217,12 +223,12 @@ const addFriend = (receiverId: number) => {
 const userStore = useUserStore();
 const selfData = ref<UserListData>();
 const groupCheckedList = ref<UserListData[]>([]);
-const createGroup = (member_ids: number[]) => {
+const createGroup = (checkedList: UserListData[]) => {
     createGroupApi({
-        name: JSON.stringify(member_ids),
-        member_ids: JSON.stringify(member_ids)
-    }).then(res => {
-        console.log(res);
+        name: JSON.stringify(checkedList.map(item => item.username)),
+        member_ids: JSON.stringify(checkedList.map(item => item.user_id))
+    }).then(() => {
+        sessionStore.getSessionList()
     })
 }
 </script>

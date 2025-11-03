@@ -26,8 +26,6 @@ export const useSessionStore = defineStore(
         const getSessionList = () => {
             getSessionListApi().then(res => {
                 sessionList.value = res.data.data
-                // conv_id.value = sessionList.value[0].id
-                // console.log(sessionList.value);
             })
         }
 

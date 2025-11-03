@@ -75,12 +75,23 @@ interface CreateGroupResponseData {
 interface GetMessageListParams {
     conversation_id: number
     last_msg_id?: number
-    limit?: number
+    limit: number
 }
 
 interface GetMessageListResponse {
     state: number
     msg: string
+    data: Message[]
+}
+
+interface Message {
+    id: number
+    content: string
+    sender_id: number
+    sender_username: string
+    parent_id: number
+    is_recalled: boolean
+    timestamp: number
 }
 
 export {
@@ -95,5 +106,7 @@ export {
     SessionData,
     CreateGroupParams,
     CreateGroupResponse,
-    GetMessageListParams
+    GetMessageListParams,
+    GetMessageListResponse,
+    Message
 }
