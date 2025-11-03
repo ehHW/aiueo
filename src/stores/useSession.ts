@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { getSessionListApi } from '@/api/friend';
 import type { SessionData } from '@/types/chat';
 import { ref } from 'vue';
+import { useMessageStore } from '@/stores/useMessage';
 
 
 export const useSessionStore = defineStore(
@@ -23,15 +24,28 @@ export const useSessionStore = defineStore(
             unread: 0
         })
         const sessionList = ref<SessionData[]>([])
+        const messageStore = useMessageStore()
         const getSessionList = () => {
             getSessionListApi().then(res => {
-                sessionList.value = res.data.data
+                if (res.data.state == 200) {
+                    sessionList.value = res.data.data
+                    messageStore.sessionMessageList = []
+                    const unexist_session_message_list = sessionList.value.filter(session => {
+                        const exist_session_message_list = messageStore.sessionMessageList.map(item => item.conv_id)
+                        if (!exist_session_message_list.includes(session.id)) return true
+                    })
+                    unexist_session_message_list.forEach(session => {
+                        messageStore.sessionMessageList.push({conv_id: session.id, noMore: false, msgList: []})
+                    })
+                    messageStore.getSessionMessageListMessages()
+                }
             })
         }
 
         const changeSession = (session: SessionData) => {
             SessionInfo.value = session
         }
+
         return {
             conv_id,
             changeConvId,

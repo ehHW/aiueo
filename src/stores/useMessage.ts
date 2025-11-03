@@ -1,29 +1,47 @@
 import { defineStore } from 'pinia'
 
 import { getMessageListApi } from '@/api/friend';
-import type { GetMessageListParams, Message } from '@/types/chat';
-import { ref } from 'vue';
+// import type { GetMessageListParams, Message, SessionMessageItem } from '@/types/chat';
+import type { SessionMessageItem } from '@/types/chat';
+import { computed, ref } from 'vue';
+import { useSessionStore } from './useSession';
 
 
 export const useMessageStore = defineStore(
     'message',
     () => {
-        const messageList = ref<Message[]>([])
-        const loading = ref(false)          // 是否正在请求
-        const noMore = ref(false)           // 是否到底（没有更早消息）
-        const getMessageList = (data: GetMessageListParams) => {
-            messageList.value = []
-            getMessageListApi(data).then(res => {
-                if (res.data.state == 200) {
-                    messageList.value.push(...res.data.data)
-                    noMore.value = res.data.data.length < data.limit   // 返回不足 50 条说明到顶
-                } else ElMessage.error(res.data.msg)
-            }).finally(() => loading.value = false)
+        const sessionStore = useSessionStore()
+        const sessionMessageList = ref<SessionMessageItem[]>([])
+        const getSessionMessageListMessages = () => {
+            sessionMessageList.value.forEach(sessionMessageItem => {
+                getMessageListApi({
+                    conversation_id: sessionMessageItem.conv_id,
+                    limit: 50
+                }).then(res => {
+                    const list = res.data.data
+                    sessionMessageItem.noMore = res.data.data.length < 50
+                    sessionMessageItem.msgList.push(...list)
+                })
+            })
         }
+        const currentSession = computed(() => sessionMessageList.value.find(item => item.conv_id === sessionStore.conv_id))
+        // const messageList = ref<Message[]>([])
+        const loading = ref(false)          // 是否正在请求
+        // const noMore = ref(false)        // 是否到底（没有更早消息）
+        // const getMessageList = (data: GetMessageListParams) => {
+        //     messageList.value = []
+        //     getMessageListApi(data).then(res => {
+        //         if (res.data.state == 200) {
+        //             messageList.value.push(...res.data.data)
+        //             noMore.value = res.data.data.length < data.limit   // 返回不足 50 条说明到顶
+        //         } else ElMessage.error(res.data.msg)
+        //     }).finally(() => loading.value = false)
+        // }
 
         const loadMoreHistory = (conversationId: number) => {
-            if (loading.value || noMore.value) return
-            const oldestId = messageList.value[0]?.id
+            const currentSession = sessionMessageList.value.find(sessionMessageItem => sessionMessageItem.conv_id === conversationId)
+            if (loading.value || currentSession!.noMore) return
+            const oldestId = currentSession?.msgList[0]?.id      //messageList.value[0]?.id
             if (!oldestId) return          // 当前列表为空
             loading.value = true
             return getMessageListApi({
@@ -33,18 +51,21 @@ export const useMessageStore = defineStore(
             }).then(res => {
                 if (res.data.state === 200) {
                     const list = res.data.data
-                    if (list.length) messageList.value.unshift(...list)
-                    noMore.value = list.length < 50
+                    if (list.length) currentSession.msgList.unshift(...list)
+                    currentSession!.noMore = list.length < 50
                     } else ElMessage.error(res.data.msg)
                 }).finally(() => loading.value = false)
         }
 
         return {
-            messageList,
+            // messageList,
+            currentSession,
             loading,
-            noMore,
-            getMessageList,
+            // noMore,
+            // getMessageList,
             loadMoreHistory,
+            sessionMessageList,
+            getSessionMessageListMessages
         }
     },
     {

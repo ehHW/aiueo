@@ -11,18 +11,18 @@
                 </div>
                 <div class="session-item-mid">
                     <div class="session-title">
-                        {{ session.title }}
+                        {{ session?.title }}
                     </div>
                     <div class="last-msg">
-                        {{ messageStore.messageList[messageStore.messageList.length-1].content }}
+                        {{ getLastMsg(session.id) }}
                     </div>
                 </div>
                 <div class="session-item-right">
                     <div class="time">
-                        16:51
+                        {{ formatTs(getDate(session.id) as number) }}
                     </div>
                     <div class="unreadnum">
-                        <span>10</span>
+                        <span>{{ session.unread <= 99 ? session.unread : "99+" }}</span>
                     </div>
                 </div>
             </li>
@@ -38,9 +38,60 @@ import { onMounted, toRefs, watch } from 'vue';
 const messageStore = useMessageStore()
 const sessionStore = useSessionStore();
 const { SessionInfo, changeSession } = toRefs(sessionStore);
+
+
+const getLastMsg = (sessionId: number) => {
+    const session = messageStore.sessionMessageList.find(s => s.conv_id === sessionId);
+    const list = session?.msgList;
+    return list?.length ? list[list.length - 1].content : '';
+};
+
+const getDate = (sessionId: number) => {
+    const session = messageStore.sessionMessageList.find(s => s.conv_id === sessionId);
+    const list = session?.msgList;
+    return list?.length ? list[list.length - 1].timestamp : '';
+}
+
 watch(() => SessionInfo.value, () => {
     sessionStore.changeConvId(SessionInfo.value.id)
 })
+
+// 处理日期
+const formatTs = (ts: number): string => {
+    const date = new Date(ts);
+    const now = new Date();
+
+    // 统一为本地零点时间
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfThisWeek = new Date(startOfToday);
+    startOfThisWeek.setDate(startOfToday.getDate() - startOfToday.getDay()); // 本周日
+
+    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    const startOfNextYear = new Date(now.getFullYear() + 1, 0, 1);
+
+    // 今天内
+    if (date >= startOfToday) {
+        const h = date.getHours().toString().padStart(2, '0');
+        const m = date.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+    }
+
+    // 本周内
+    if (date >= startOfThisWeek) {
+        const weekDay = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
+        return `星期${weekDay}`;
+    }
+
+    // 今年内
+    if (date >= startOfThisYear && date < startOfNextYear) {
+        const M = (date.getMonth() + 1).toString().padStart(2, '0');
+        const D = date.getDate().toString().padStart(2, '0');
+        return `${M}/${D}`;
+    }
+
+    // 其它
+    return '';
+}
 
 onMounted(() => sessionStore.getSessionList())
 </script>
@@ -53,6 +104,7 @@ onMounted(() => sessionStore.getSessionList())
     background-color: var(--header-bg-color);
     overflow: auto;
     position: relative;
+    user-select: none;
 }
 
 .session-list ul {

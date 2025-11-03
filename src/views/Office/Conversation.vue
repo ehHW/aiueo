@@ -10,7 +10,7 @@
                     <div class="content-body" ref="contentBody" @scroll="onScroll">
                         <ul>
                             <li
-                            v-for="msgItem in messageStore.messageList"
+                            v-for="msgItem in messageStore.currentSession?.msgList"
                             :key="msgItem.id"
                             :class="msgItem.sender_id === userStore.userInfo.user_id ? 'selfuser' : 'targetuser'"
                             >
@@ -103,12 +103,16 @@ const onScroll = (e: Event) => {
     if (toTop) {
         // 记录当前高度，用于加载后保持滚动位置
         const oldHeight = el.scrollHeight
-        messageStore.loadMoreHistory(sessionStore.SessionInfo.id)?.then(() => {
+        messageStore.loadMoreHistory(sessionStore.SessionInfo?.id)?.then(() => {
             nextTick(() => { el.scrollTop = el.scrollHeight - oldHeight })
         })
     }
 }
 
+const scrollToBottom = async () => {
+  await nextTick()          // 等 DOM 更新
+  contentBody.value?.scrollTo({ top: contentBody.value.scrollHeight })
+}
 
 let msg = ref<string>("");
 const ws = ref<ReconnectingWebSocket | null>(null)
@@ -124,7 +128,7 @@ const handleOpen = () => console.log('✅ WebSocket opened')
 const handleClose = () => console.log('❌ WebSocket closed')
 const handleError = () => console.log('⚠️ WebSocket error')
 const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
-    messageStore.messageList.push(JSON.parse(e.data).msg);
+    messageStore.currentSession!.msgList.push(JSON.parse(e.data).msg);
     nextTick(() => contentBody.value?.scrollTo({top: contentBody.value.scrollHeight}))
 }
 /* ---------- 创建/销毁连接 ---------- */
@@ -160,22 +164,21 @@ function changeRoom() {
 
 watch(() => sessionStore.conv_id, () => {
     changeRoom()
-    messageStore.getMessageList({
-        conversation_id: sessionStore.conv_id,
-        limit: 50
-    })
 })
+
+watch(() => messageStore.currentSession?.msgList,
+    async () => {
+        await scrollToBottom()
+    },
+    { deep: true }   // 数组 push 会触发
+)
 
 /* ---------- 生命周期 ---------- */
-onMounted(() => {
+onMounted(async () => {
     makeWs(sessionStore.conv_id)
-    messageStore.getMessageList({
-        conversation_id: sessionStore.conv_id,
-        limit: 50
-    })
+    await scrollToBottom()   // 首次渲染完滚到底
 })
 onUnmounted(() => ws.value?.close())
-
 </script>
 
 <style scoped>
@@ -199,6 +202,7 @@ onUnmounted(() => ws.value?.close())
     display: flex;
     align-items: center;
     border-bottom: 1px solid rgb(55, 55, 55);
+    user-select: none;
 }
 
 .content-header {
@@ -248,6 +252,7 @@ onUnmounted(() => ws.value?.close())
 
 .content-body ul li.selfuser .content {
     margin: 0 8px 0 40px;
+    padding: 0 10px;
     background-color: red;
 }
 

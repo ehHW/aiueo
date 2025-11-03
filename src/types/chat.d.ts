@@ -86,12 +86,19 @@ interface GetMessageListResponse {
 
 interface Message {
     id: number
+    conv_id?: number
     content: string
     sender_id: number
     sender_username: string
     parent_id: number
     is_recalled: boolean
     timestamp: number
+}
+
+interface SessionMessageItem {
+    conv_id: number
+    noMore: boolean
+    msgList: Message[]
 }
 
 export {
@@ -108,5 +115,6 @@ export {
     CreateGroupResponse,
     GetMessageListParams,
     GetMessageListResponse,
-    Message
+    Message,
+    SessionMessageItem
 }
