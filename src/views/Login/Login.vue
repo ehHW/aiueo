@@ -41,8 +41,8 @@ interface RuleForm {
 }
 
 let form = reactive({
-    mobile: '13409830827',
-    password: '888888',
+    mobile: '',
+    password: '',
 })
 
 const formRef = ref<FormInstance>()

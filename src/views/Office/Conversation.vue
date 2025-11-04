@@ -127,9 +127,31 @@ function send() {
 const handleOpen = () => console.log('✅ WebSocket opened')
 const handleClose = () => console.log('❌ WebSocket closed')
 const handleError = () => console.log('⚠️ WebSocket error')
+const delivered = new Set<number>()
 const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
-    messageStore.currentSession!.msgList.push(JSON.parse(e.data).msg);
-    nextTick(() => contentBody.value?.scrollTo({top: contentBody.value.scrollHeight}))
+    const { type, msg } = JSON.parse(e.data)
+    const id = msg.id
+    if (delivered.has(id)) return   // 重复直接丢弃
+    delivered.add(id)
+    if (type === 'inbox') {               // 个人收件箱
+        // 1. 如果当前正好在对应会话，直接追加
+        if (msg.conv_id === sessionStore.conv_id) {
+            messageStore.currentSession!.msgList.push(msg)
+            nextTick(scrollToBottom)
+        } else {
+            // 2. 否则弹通知 / 未读+1 / 会话列表重新排序
+            ElMessage.info(`新消息来自 ${msg.sender_username}`)
+            // chatStore.increaseUnread(msg.conv_id)
+            messageStore.sessionMessageList.find(item => item.conv_id === msg.conv_id)!.msgList.push(msg)
+        }
+        return
+    }
+    if (type === 'normal') {
+        // 原来的聊天室消息（已经在房间里）
+        messageStore.currentSession!.msgList.push(msg)
+        nextTick(scrollToBottom)
+    }
+
 }
 /* ---------- 创建/销毁连接 ---------- */
 function makeWs(id: number) {
@@ -163,6 +185,7 @@ function changeRoom() {
 }
 
 watch(() => sessionStore.conv_id, () => {
+    delivered.clear()
     changeRoom()
 })
 
@@ -232,6 +255,7 @@ onUnmounted(() => ws.value?.close())
 }
 
 .user-avatar {
+    user-select: none;
     img {
         width: 32px;
         height: 32px;
@@ -242,23 +266,23 @@ onUnmounted(() => ws.value?.close())
 
 .content-body ul li.selfuser {
     justify-content: end;
-    background-color: aqua;
+    background-color: rgba(0, 255, 255, 0.2);
 }
 
 .content-body ul li.targetuser {
     justify-content: start;
-    background-color: greenyellow;
+    background-color: rgba(173, 255, 47, 0.2);
 }
 
 .content-body ul li.selfuser .content {
     margin: 0 8px 0 40px;
     padding: 0 10px;
-    background-color: red;
+    background-color: var(--header-bg-color);
 }
 
 .content-body ul li.targetuser .content {
     margin: 0 0 0 8px;
-    background-color: red;
+    background-color: var(--header-bg-color);
 }
 
 .content {
@@ -285,6 +309,7 @@ onUnmounted(() => ws.value?.close())
     height: 30px;
     background-color: rgb(55, 87, 87);
     padding: 0px 11px;
+    user-select: none;
 }
 
 .input-body {

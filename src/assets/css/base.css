@@ -62,8 +62,10 @@ body,
 
     --el-text-color-regular: black;
 
-    --chat-change-list-selected-text-color: #46a1ff;
-    --chat-change-list-selected-bg-color: #46a3ff1c;
+    --chat-change-list-iconfont-text-color: #409eff;
+    --chat-change-list-iconfont-hover-color: rgba(200, 200, 200, 0.4);
+    --chat-change-list-iconfont-active-bg-color: rgb(228, 228, 228);
+
 }
 
 :root.dark {
@@ -107,6 +109,10 @@ body,
     --menu-bg-color: #333;
 
     --el-text-color-regular: rgb(222, 222, 222);
+
+    --chat-change-list-iconfont-text-color: #46a1ff;
+    --chat-change-list-iconfont-hover-color: rgba(200, 200, 200, 0.4);
+    --chat-change-list-iconfont-active-bg-color: rgb(42, 42, 42);
 }
 
 #app {

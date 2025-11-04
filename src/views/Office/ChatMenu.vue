@@ -36,8 +36,12 @@ watch(() => chatStore.mode.message, (newVal) => {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    background-color: #f5f5f5;
+    background-color: var(--header-bg-color);
     overflow: hidden;
+}
+
+.chat-menu p {
+    border-radius: 5px;
 }
 
 .iconfont {
@@ -47,18 +51,19 @@ watch(() => chatStore.mode.message, (newVal) => {
     text-align: center;
     line-height: 36px;
     margin: 5px 0;
-    background-color: red;
+    /* background-color: red; */
     transition: all 0.3s ease;
     cursor: default;
+    font-weight: 500;
 }
 
 .iconfont:hover {
-    color: #409eff;
-    background-color: #fff;
+    color: var(--chat-change-list-iconfont-text-color);
+    background-color: var(--chat-change-list-iconfont-hover-color)
 }
 
 .iconfont.active {
-    color: red;
-    background-color: black;
+    color: var(--chat-change-list-iconfont-text-color);
+    background-color: var(--chat-change-list-iconfont-active-bg-color);
 }
 </style>

@@ -1,7 +1,8 @@
 <template>
     <div class="contact-list">
         <ul>
-            <li v-for="friend in friendList" :key="friend.user_id" @dblclick="getOrCreatePrivate(friend.user_id)">
+            <li v-for="friend in friendList" :key="friend.user_id"
+            @dblclick="getOrCreatePrivate(friend.user_id)">
                 <div class="avatar">
                     <img src="@/assets/img/miao.png" />
                 </div>
@@ -36,8 +37,8 @@ const chatStore = useChatStore()
 const sessionStore = useSessionStore()
 const getOrCreatePrivate = (target_id: number) => {
     getOrCreatePrivateApi({target_id}).then(res => {
-        sessionStore.conv_id = res.data.data.conversation_id
         chatStore.changeMode('message')
+        sessionStore.changeConvId(res.data.data.conversation_id)
     })
 }
 </script>

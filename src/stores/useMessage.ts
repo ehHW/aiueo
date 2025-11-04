@@ -4,7 +4,7 @@ import { getMessageListApi } from '@/api/friend';
 // import type { GetMessageListParams, Message, SessionMessageItem } from '@/types/chat';
 import type { SessionMessageItem } from '@/types/chat';
 import { computed, ref } from 'vue';
-import { useSessionStore } from './useSession';
+import { useSessionStore } from '@/stores/useSession';
 
 
 export const useMessageStore = defineStore(

@@ -134,7 +134,7 @@ onMounted(() => sessionStore.getSessionList())
 }
 
 .session-list ul li.active {
-    background-color: #aaa;
+    background-color: #787878;
 }
 
 .session-item-left {
