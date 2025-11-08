@@ -26,7 +26,7 @@ export const useSessionStore = defineStore(
         const sessionList = ref<SessionData[]>([])
         const messageStore = useMessageStore()
         const getSessionList = () => {
-            getSessionListApi().then(res => {
+            return getSessionListApi().then(res => {
                 if (res.data.state == 200) {
                     sessionList.value = res.data.data
                     messageStore.sessionMessageList = []

@@ -273,7 +273,7 @@ const handleAdd = () => {
     router.push('/role/create')
 }
 
-let tableHeight = ref(341)
+let tableHeight = ref(400)
 
 const formInline = reactive({
     role_name: '',
@@ -467,8 +467,8 @@ const deleteRow = async (row: RoleListData) => {
     background-color: var(--my-main-search-bg-color) !important;
 }
 
-:deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
-    max-height: calc(100% - 20px) !important;
-}
+// :deep(.el-scrollbar__wrap.el-scrollbar__wrap--hidden-default) {
+//     max-height: calc(100% - 20px) !important;
+// }
 
 </style>

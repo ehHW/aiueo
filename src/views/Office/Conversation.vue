@@ -4,9 +4,12 @@
             <!-- 展示区 -->
             <el-splitter-panel>
                 <div class="content-area">
+                    <!-- 内容头 -->
                     <div class="content-header">
                         <span>{{ sessionStore.SessionInfo.title }}</span>
+                        <span @click="convDrawer = true">...</span>
                     </div>
+                    <!-- 内容体 -->
                     <div class="content-body" ref="contentBody" @scroll="onScroll">
                         <ul>
                             <li
@@ -17,8 +20,13 @@
                                 <div class="user-avatar" v-if="!(msgItem.sender_id === userStore.userInfo.user_id)">
                                     <img src="@/assets/img/miao.png" alt="">
                                 </div>
-                                <div class="content">
-                                    {{ msgItem.content }}
+                                <div class="msg-content">
+                                    <div class="usernickname" v-if="sessionStore.SessionInfo.type === 'group'">
+                                        {{ msgItem.sender_username }}
+                                    </div>
+                                    <div class="content">
+                                        {{ msgItem.content }}
+                                    </div>
                                 </div>
                                 <div class="user-avatar" v-if="msgItem.sender_id === userStore.userInfo.user_id">
                                     <img src="@/assets/img/miao.png" alt="">
@@ -26,6 +34,31 @@
                             </li>
                         </ul>
                     </div>
+                    <!-- 会话抽屉 -->
+                    <el-drawer v-model="convDrawer" title="I am the title" :with-header="false">
+                        <div class="convDrawer">
+                            <div class="private-type" v-show="sessionStore.SessionInfo.type === 'private'">
+                                <div class="set-as-top">
+                                    <span>设为置顶</span><el-switch v-model="setAsTop" />
+                                </div>
+                                <div class="msg-undisturbed">
+                                    <span>消息免打扰</span><el-switch v-model="msgUndisturbed" />
+                                </div>
+                                <div class="block-out">
+                                    <span>屏蔽此人</span><el-switch v-model="blockOut" />
+                                </div>
+                                <div class="del-msg-history">
+                                    <span>删除聊天记录</span>
+                                </div>
+                                <div class="del-friend" @click="delFriendOrQuitGroup(sessionStore.SessionInfo.id)">
+                                    <span>删除好友</span>
+                                </div>
+                            </div>
+                            <div class="group-type" v-show="sessionStore.SessionInfo.type === 'group'">
+
+                            </div>
+                        </div>
+                    </el-drawer>
                 </div>
             </el-splitter-panel>
             <!-- 输入区 -->
@@ -46,6 +79,7 @@
                 </div>
             </el-splitter-panel>
         </el-splitter>
+        <!-- 处理好友请求区 -->
         <div class="request-friend-list" v-show="chatStore.mode.contact">
             <ul>
                 <li v-for="sender in chatStore.friendRequestList" :key="sender.sender_id">
@@ -54,7 +88,7 @@
                     </div>
                     <div class="request-friend-list-content">
                         {{ sender.sender_username }}
-                        {{ sender.sender_time }}
+                        {{ sender.sender_time.split('T')[0] }}
                     </div>
                     <div class="request-friend-list-handle">
                         <el-button @click="handleFriendRequest('accept', sender.sender_id)">接受</el-button>
@@ -70,7 +104,7 @@
 import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick } from 'vue'
 import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
-import { handleFriendRequestApi } from "@/api/friend";
+import { handleFriendRequestApi, delFriendOrQuitGroupApi } from "@/api/friend";
 import { useSessionStore } from '@/stores/useSession';
 import { useMessageStore } from '@/stores/useMessage';
 import { useUserStore } from '@/stores/useUser';
@@ -85,6 +119,8 @@ const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => 
     handleFriendRequestApi(action, senderId).then(() => {
         // console.log(`处理好友请求 ${action}:`, res.data);
         chatStore.getFriendRequestList();
+        chatStore.getOrCreatePrivate(senderId)
+        chatStore.changeMode('message')
         ElMessage.success('好友请求已接受')
     }).catch(() => {
         // console.error(`处理好友请求 ${action} 失败:`, error);
@@ -129,29 +165,32 @@ const handleClose = () => console.log('❌ WebSocket closed')
 const handleError = () => console.log('⚠️ WebSocket error')
 const delivered = new Set<number>()
 const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
-    const { type, msg } = JSON.parse(e.data)
+    const { type, state, msg } = JSON.parse(e.data)
+    if (type === 'inbox' && state === 403) {
+        ElMessage.error(msg.content)
+        return
+    }
     const id = msg.id
     if (delivered.has(id)) return   // 重复直接丢弃
     delivered.add(id)
-    if (type === 'inbox') {               // 个人收件箱
+    if (type === 'inbox' && state === 200) {               // 个人收件箱
         // 1. 如果当前正好在对应会话，直接追加
         if (msg.conv_id === sessionStore.conv_id) {
             messageStore.currentSession!.msgList.push(msg)
             nextTick(scrollToBottom)
         } else {
             // 2. 否则弹通知 / 未读+1 / 会话列表重新排序
-            ElMessage.info(`新消息来自 ${msg.sender_username}`)
+            ElMessage.primary(`新消息来自 ${msg.sender_username}`)
             // chatStore.increaseUnread(msg.conv_id)
             messageStore.sessionMessageList.find(item => item.conv_id === msg.conv_id)!.msgList.push(msg)
         }
         return
     }
-    if (type === 'normal') {
+    if (type === 'normal' && state === 200) {
         // 原来的聊天室消息（已经在房间里）
         messageStore.currentSession!.msgList.push(msg)
         nextTick(scrollToBottom)
     }
-
 }
 /* ---------- 创建/销毁连接 ---------- */
 function makeWs(id: number) {
@@ -196,6 +235,20 @@ watch(() => messageStore.currentSession?.msgList,
     { deep: true }   // 数组 push 会触发
 )
 
+const convDrawer = ref(false)
+const setAsTop = ref(false)
+const msgUndisturbed = ref(false)
+const blockOut = ref(false)
+
+const delFriendOrQuitGroup = (conv_id: number) => {
+    delFriendOrQuitGroupApi(conv_id).then(res => {
+        if (res.data.state === 200) {
+            sessionStore.getSessionList()
+            chatStore.getFriendList()
+            convDrawer.value = false
+        } else ElMessage.error(res.data.msg)
+    })
+}
 /* ---------- 生命周期 ---------- */
 onMounted(async () => {
     makeWs(sessionStore.conv_id)
@@ -226,11 +279,12 @@ onUnmounted(() => ws.value?.close())
     align-items: center;
     border-bottom: 1px solid rgb(55, 55, 55);
     user-select: none;
+    justify-content: space-between;
 }
 
-.content-header {
+.content-header span{
     font-weight: bold;
-    color: var(--header-text-color)
+    color: var(--header-text-color);
 }
 
 .content-body {
@@ -267,31 +321,50 @@ onUnmounted(() => ws.value?.close())
 .content-body ul li.selfuser {
     justify-content: end;
     background-color: rgba(0, 255, 255, 0.2);
+    /* position: relative; */
 }
 
 .content-body ul li.targetuser {
     justify-content: start;
     background-color: rgba(173, 255, 47, 0.2);
+    /* position: relative; */
 }
 
-.content-body ul li.selfuser .content {
-    margin: 0 8px 0 40px;
-    padding: 0 10px;
+.usernickname {
+    font-size: 12px;
+}
+
+.msg-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.content-body ul li.selfuser .msg-content {
+    align-items: end;
+    margin: 0 10px 0 40px;
+}
+
+.content-body ul li.targetuser .msg-content {
+    align-items: start;
+    margin: 0 40px 0 10px;
+}
+
+.content-body ul li.selfuser .msg-content .content {
     background-color: var(--header-bg-color);
 }
 
-.content-body ul li.targetuser .content {
-    margin: 0 0 0 8px;
+.content-body ul li.targetuser .msg-content .content {
     background-color: var(--header-bg-color);
 }
 
 .content {
     border-radius: 5px;
-    padding: 5px;
+    padding: 10px;
     display: flex;
     align-items: center;
 }
-
 
 .input-area {
     width: 100%;
@@ -301,7 +374,6 @@ onUnmounted(() => ws.value?.close())
     padding: 5px;
     display: flex;
     flex-direction: column;
-
 }
 
 .input-header {
@@ -347,7 +419,7 @@ textarea {
     height: 100%;
     overflow: auto;
     padding: 30px;
-    background-color: antiquewhite;
+    /* background-color: antiquewhite; */
 }
 
 .request-friend-list ul {
@@ -396,5 +468,64 @@ textarea {
 
 .request-friend-list-handle button {
     --el-button-text-color: rgb(91 91 91)
+}
+
+:deep(.el-drawer__body) {
+    padding: 10px;
+    background-color: var(--layout-content-bg-color);
+}
+
+.convDrawer {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    background: var(--header-bg-color);
+}
+
+.private-type {
+    width: 100%;
+    height: 100%;
+    /* background: rgb(126, 126, 172); */
+    cursor: default;
+    color: var(--header-text-color);
+    padding-top: 20px;
+}
+
+.private-type > div:nth-child(n) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* width: 100%; */
+    height: 40px;
+    margin: 0 12px 0 12px;
+    border-radius: 5px;
+    background-color: var(--layout-content-bg-color);
+    padding: 0 10px;
+}
+
+.private-type > div:nth-child(n+2) {
+    margin-top: 10px;
+}
+
+.private-type > div.del-msg-history {
+    justify-content: center;
+}
+
+.private-type > div.del-msg-history:hover {
+    background-color: var(--chat-change-list-iconfont-hover-color);
+}
+
+.private-type > div.del-friend {
+    justify-content: center;
+}
+
+.private-type > div.del-friend:hover {
+    background-color: var(--chat-change-list-iconfont-hover-color);
+}
+
+.group-type {
+    width: 100%;
+    height: 100%;
+    background: rgb(124, 187, 175);
 }
 </style>

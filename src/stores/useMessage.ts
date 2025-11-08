@@ -25,18 +25,7 @@ export const useMessageStore = defineStore(
             })
         }
         const currentSession = computed(() => sessionMessageList.value.find(item => item.conv_id === sessionStore.conv_id))
-        // const messageList = ref<Message[]>([])
         const loading = ref(false)          // 是否正在请求
-        // const noMore = ref(false)        // 是否到底（没有更早消息）
-        // const getMessageList = (data: GetMessageListParams) => {
-        //     messageList.value = []
-        //     getMessageListApi(data).then(res => {
-        //         if (res.data.state == 200) {
-        //             messageList.value.push(...res.data.data)
-        //             noMore.value = res.data.data.length < data.limit   // 返回不足 50 条说明到顶
-        //         } else ElMessage.error(res.data.msg)
-        //     }).finally(() => loading.value = false)
-        // }
 
         const loadMoreHistory = (conversationId: number) => {
             const currentSession = sessionMessageList.value.find(sessionMessageItem => sessionMessageItem.conv_id === conversationId)
@@ -58,11 +47,8 @@ export const useMessageStore = defineStore(
         }
 
         return {
-            // messageList,
             currentSession,
             loading,
-            // noMore,
-            // getMessageList,
             loadMoreHistory,
             sessionMessageList,
             getSessionMessageListMessages

@@ -54,3 +54,7 @@ export const getMessageListApi = (data: GetMessageListParams) => {
         params: data
     })
 }
+
+export const delFriendOrQuitGroupApi = (conv_id: number) => {
+    return instance.delete(`/chat/friends/request/del/${conv_id}/`)
+}

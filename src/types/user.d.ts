@@ -1,5 +1,5 @@
 interface LoginParams {
-    mobile: string
+    login_name: string
     password: string
 }
 

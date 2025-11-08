@@ -29,10 +29,11 @@ import { useUserStore } from '@/stores/useUser'
 const init = async () => {
     const userStore = useUserStore()
     const modules = userStore.modules
-    await getMenuApi().then((res2) => {
-        if (res2.data.state === 200) {
-            // console.log(res2.data.data)
-            for (const item of res2.data.data) {
+    await userStore.refreshToken()
+    await getMenuApi().then((res) => {
+        if (res.data.state === 200) {
+            // console.log(res.data.data)
+            for (const item of res.data.data) {
                 for (const child of item.children) {
                     // console.log(modules[`..${child.component.slice(1)}`])
                     router.addRoute('Layout', {

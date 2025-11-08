@@ -67,7 +67,7 @@ export const useUserStore = defineStore(
                     clearInterval(timer)
                     timer = setInterval(() => {
                         userInfo.expires_in -= 1
-                        if (userInfo.expires_in <= 10) {
+                        if (userInfo.expires_in <= 1200) {
                             refreshToken()
                         }
                     }, 1000)

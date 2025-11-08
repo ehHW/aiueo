@@ -1,9 +1,10 @@
 import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 
-import { getFriendRequestListApi } from '@/api/friend';
-import type { FriendRequestData } from '@/types/chat';
+import { getFriendListApi, getFriendRequestListApi, getOrCreatePrivateApi } from '@/api/friend';
+import type { FriendData, FriendRequestData, SessionData } from '@/types/chat';
 import { ref } from 'vue';
+import { useSessionStore } from '@/stores/useSession';
 
 
 export const useChatStore = defineStore(
@@ -36,11 +37,36 @@ export const useChatStore = defineStore(
             });
         }
         getFriendRequestList();
+
+        const friendList = ref<FriendData[]>([])
+        const getFriendList = () => {
+            getFriendListApi().then((res) => {
+                friendList.value = res.data.data
+            }).catch((error) => {
+                console.error('获取好友列表失败:', error);
+            });
+        }
+
+        const sessionStore = useSessionStore()
+        const getOrCreatePrivate = (target_id: number) => {
+            getOrCreatePrivateApi({target_id}).then(res => {
+                const conv_id = res.data.data.conversation_id
+                changeMode('message')
+                sessionStore.getSessionList().then(() => {
+                    sessionStore.changeConvId(conv_id)
+                    sessionStore.changeSession(sessionStore.sessionList.find(item => item.id === conv_id) as SessionData)
+                })
+            })
+        }
+
         return {
             mode,
             changeMode,
             friendRequestList,
             getFriendRequestList,
+            friendList,
+            getFriendList,
+            getOrCreatePrivate,
         }
     },
     {

@@ -1,8 +1,8 @@
 <template>
     <div class="contact-list">
         <ul>
-            <li v-for="friend in friendList" :key="friend.user_id"
-            @dblclick="getOrCreatePrivate(friend.user_id)">
+            <li v-for="friend in chatStore.friendList" :key="friend.user_id"
+            @dblclick="chatStore.getOrCreatePrivate(friend.user_id)">
                 <div class="avatar">
                     <img src="@/assets/img/miao.png" />
                 </div>
@@ -15,32 +15,11 @@
 </template>
 
 <script setup lang="ts">
-import { getFriendListApi, getOrCreatePrivateApi } from '@/api/friend';
 import { useChatStore } from '@/stores/useChat';
-import { useSessionStore } from '@/stores/useSession';
-import type { FriendData } from '@/types/chat';
-import { onMounted, ref } from 'vue';
-
-const friendList = ref<FriendData[]>([])
-const getFriendList = () => {
-    getFriendListApi().then((res) => {
-        // console.log('获取好友列表:', res.data.data);
-        friendList.value = res.data.data
-    }).catch((error) => {
-        console.error('获取好友列表失败:', error);
-    });
-}
-
-onMounted(() => getFriendList())
+import { onMounted } from 'vue';
 
 const chatStore = useChatStore()
-const sessionStore = useSessionStore()
-const getOrCreatePrivate = (target_id: number) => {
-    getOrCreatePrivateApi({target_id}).then(res => {
-        chatStore.changeMode('message')
-        sessionStore.changeConvId(res.data.data.conversation_id)
-    })
-}
+onMounted(() => chatStore.getFriendList())
 </script>
 
 <style scoped>
@@ -63,10 +42,14 @@ const getOrCreatePrivate = (target_id: number) => {
 .contact-list ul li {
     width: 100%;
     height: 50px;
-    background-color: aqua;
+    background-color: transparent;
     display: flex;
     align-items: center;
     padding: 5px 10px;
+}
+
+.contact-list ul li:hover {
+    background-color: rgba(200, 200, 200, 0.4);
 }
 
 .avatar {

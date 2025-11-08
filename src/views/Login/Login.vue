@@ -9,9 +9,9 @@
                     <div class="logo">
                         <!-- <img src="@/assets/img/miao.png" alt="" /> -->
                     </div>
-                    <el-form :model="form" :rules="rules" ref="formRef">
+                    <el-form :model="form" :rules="rules" ref="formRef" @keyup.enter.prevent="submitForm(formRef)">
                         <el-form-item prop="username">
-                            <el-input v-model="form.mobile" :prefix-icon="User" />
+                            <el-input v-model="form.login_name" :prefix-icon="User" />
                         </el-form-item>
                         <el-form-item prop="password">
                             <el-input v-model="form.password" :prefix-icon="Lock" show-password />
@@ -36,19 +36,19 @@ import { useUserStore } from '@/stores/useUser';
 const userStore = useUserStore()
 
 interface RuleForm {
-    mobile: string
+    login_name: string
     password: string
 }
 
 let form = reactive({
-    mobile: '',
+    login_name: '',
     password: '',
 })
 
 const formRef = ref<FormInstance>()
 
 const rules = reactive<FormRules<RuleForm>>({
-    mobile: [
+    login_name: [
         { required: true, message: '请输入用户名', trigger: 'blur' },
         { min: 2, max: 10, message: '用户名长度为2到10位', trigger: 'blur' },
     ],
@@ -63,7 +63,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
     await formEl.validate((valid) => {
         if (valid) {
             userStore.login({
-                mobile: form.mobile,
+                login_name: form.login_name,
                 password: form.password,
             })
         } else {

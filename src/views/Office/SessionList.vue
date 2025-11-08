@@ -5,7 +5,7 @@
             v-for="session in sessionStore.sessionList"
             :key="session.id"
             :class="sessionStore.conv_id === session.id ? 'active' : ''"
-            @dblclick="changeSession(session)">
+            @click="changeSession(session)">
                 <div class="session-item-left">
                     <img src="@/assets/img/miao.png" alt="" />
                 </div>
@@ -157,6 +157,13 @@ onMounted(() => sessionStore.getSessionList())
 
 .last-msg {
     font-size: small;
+}
+
+.session-title,
+.last-msg {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .session-item-right {
