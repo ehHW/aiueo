@@ -8,7 +8,8 @@ import type {
     GetMessageListParams,
     GetMessageListResponse,
     GetOrCreatePrivateParams,
-    GetOrCreatePrivateResponse
+    GetOrCreatePrivateResponse,
+    GetSessionListResponse,
 } from '@/types/chat'
 import instance from '@/utils/requests'
 
@@ -29,7 +30,7 @@ export const handleFriendRequestApi = (action: 'accept' | 'decline', sender_id: 
     })
 }
 
-export const getFriendRequestListApi = (type: 'in' | 'out' = 'in') => {
+export const getFriendRequestListApi = (type: 'in' | 'out' | 'all' = 'all') => {
     return instance.get<FriendRequestResponse<FriendRequestData[]>>('/chat/friends/request/list/', {
         params: {
             type
@@ -38,7 +39,7 @@ export const getFriendRequestListApi = (type: 'in' | 'out' = 'in') => {
 }
 
 export const getSessionListApi = () => {
-    return instance.get('/chat/conversations/')
+    return instance.get<GetSessionListResponse>('/chat/conversations/')
 }
 
 export const getOrCreatePrivateApi = (data: GetOrCreatePrivateParams) => {
@@ -57,4 +58,16 @@ export const getMessageListApi = (data: GetMessageListParams) => {
 
 export const delFriendOrQuitGroupApi = (conv_id: number) => {
     return instance.delete(`/chat/friends/request/del/${conv_id}/`)
+}
+
+export const changeGroupNameApi = (conv_id: number, name: string) => {
+    return instance.post(`/chat/conversations/change_group_name/${conv_id}/`, {name})
+}
+
+export const isGroupCreatorApi = (conv_id: number) => {
+    return instance.post(`/chat/conversations/is_group_creator/${conv_id}/`)
+}
+
+export const delGroupApi = (conv_id: number) => {
+    return instance.delete(`/chat/conversations/del/${conv_id}/`)
 }

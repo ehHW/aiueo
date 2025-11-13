@@ -241,8 +241,13 @@ const submitForm = (formEl: FormInstance | undefined) => {
                     ruleForm.avatar = ''
                     ElMessage.success(res.data.msg)
                     getData(pagenum.value, pagesize.value)
-                } else if (res.data.state === 400) {
-                    ElMessage.error(res.data.msg)
+                }
+            }, (error) => {
+                if (error.status === 400) {
+                    ElMessage.error(error.response.data.msg)
+                }
+                else if (error.status === 409) {
+                    ElMessage.error(error.response.data.msg)
                 }
             })
         } else {

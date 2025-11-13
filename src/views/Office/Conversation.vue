@@ -55,7 +55,18 @@
                                 </div>
                             </div>
                             <div class="group-type" v-show="sessionStore.SessionInfo.type === 'group'">
-
+                                <div class="change-name">
+                                    <el-input type="text" v-model="new_group_name"/>
+                                    <el-button type="primary" @click="changeGroupName(sessionStore.SessionInfo.id)">修改</el-button>
+                                </div>
+                                <div class="quit-group" @click="delFriendOrQuitGroup(sessionStore.SessionInfo.id)">
+                                    <span>退出群聊</span>
+                                </div>
+                                <div class="clear-group"
+                                @click="delGroup()"
+                                v-show="creator">
+                                    <span>解散群聊</span>
+                                </div>
                             </div>
                         </div>
                     </el-drawer>
@@ -68,32 +79,38 @@
                         toolbar
                     </div>
                     <div class="input-body">
-                        <a-textarea
+                        <a-textarea id="input-body"
                         v-model:value="msg"
                         @keyup.enter.prevent="send()"
                         />
                     </div>
                     <div class="input-footer">
-                        <el-button @click="send()" type="primary" size="small">send</el-button>
+                        <el-button @click="send()" type="primary" size="small">发送</el-button>
                     </div>
+                    <div class="mask" v-if="sessionStore.SessionInfo.dissolved">群聊已解散</div>
                 </div>
             </el-splitter-panel>
         </el-splitter>
         <!-- 处理好友请求区 -->
         <div class="request-friend-list" v-show="chatStore.mode.contact">
             <ul>
-                <li v-for="sender in chatStore.friendRequestList" :key="sender.sender_id">
+                <li v-for="fr in chatStore.friendRequestList" :key="fr.user_id">
                     <div class="request-friend-list-avatar">
-                        <el-image :src="sender.sender_avatar" />
+                        <el-image :src="fr.avatar" />
                     </div>
                     <div class="request-friend-list-content">
-                        {{ sender.sender_username }}
-                        {{ sender.sender_time.split('T')[0] }}
+                        <span>{{ fr.username }}</span>
+                        <span>{{ fr.created_at?.split('T')[0] }}</span>
                     </div>
-                    <div class="request-friend-list-handle">
-                        <el-button @click="handleFriendRequest('accept', sender.sender_id)">接受</el-button>
-                        <el-button @click="handleFriendRequest('decline', sender.sender_id)">拒绝</el-button>
+                    <div class="request-friend-list-handle" v-if="fr.status === 'pending' && fr.direction === 'in'">
+                        <el-button @click="handleFriendRequest('accept', fr.user_id)">接受</el-button>
+                        <el-button @click="handleFriendRequest('decline', fr.user_id)">拒绝</el-button>
                     </div>
+                    <div class="in-or-out-status" v-if="fr.status === 'accepted' && fr.direction === 'in'">已接受</div>
+                    <div class="in-or-out-status" v-if="fr.status === 'declined' && fr.direction === 'in'">已拒绝</div>
+                    <div class="in-or-out-status" v-if="fr.status === 'pending' && fr.direction === 'out'">等待验证</div>
+                    <div class="in-or-out-status" v-if="fr.status === 'accepted' && fr.direction === 'out'">对方已接受</div>
+                    <div class="in-or-out-status" v-if="fr.status === 'declined' && fr.direction === 'out'">对方已拒绝</div>
                 </li>
             </ul>
         </div>
@@ -104,7 +121,7 @@
 import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick } from 'vue'
 import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
-import { handleFriendRequestApi, delFriendOrQuitGroupApi } from "@/api/friend";
+import { handleFriendRequestApi, delFriendOrQuitGroupApi, changeGroupNameApi, isGroupCreatorApi, delGroupApi } from "@/api/friend";
 import { useSessionStore } from '@/stores/useSession';
 import { useMessageStore } from '@/stores/useMessage';
 import { useUserStore } from '@/stores/useUser';
@@ -220,10 +237,14 @@ function makeWs(id: number) {
 /* ---------- 切换房间 ---------- */
 function changeRoom() {
     console.log(`🔄  switching to room ${sessionStore.conv_id}`)
-    makeWs(sessionStore.conv_id)
+    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.conv_id)
+    else ws.value?.close()
 }
 
+const creator = ref(false);
+isGroupCreatorApi(sessionStore.conv_id).then(() => creator.value = true).catch(() => creator.value = false)
 watch(() => sessionStore.conv_id, () => {
+    isGroupCreatorApi(sessionStore.conv_id).then(() => creator.value = true).catch(() => creator.value = false)
     delivered.clear()
     changeRoom()
 })
@@ -241,19 +262,104 @@ const msgUndisturbed = ref(false)
 const blockOut = ref(false)
 
 const delFriendOrQuitGroup = (conv_id: number) => {
-    delFriendOrQuitGroupApi(conv_id).then(res => {
+    ws.value?.close()
+    const tipMsg = sessionStore.SessionInfo.type === 'private'? '确定删除该好友吗?': '确定退出群聊吗?'
+    ElMessageBox.confirm(
+        tipMsg,
+        '警告',
+        {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        const s_index = sessionStore.sessionList.indexOf(sessionStore.SessionInfo)
+        delFriendOrQuitGroupApi(conv_id).then(res => {
+            const msg = sessionStore.SessionInfo.type === 'private'? '删除成功': '退出成功'
+            if (res.data.state === 200) {
+                sessionStore.getSessionList()
+                chatStore.getFriendList()
+                convDrawer.value = false
+                if (sessionStore.sessionList[s_index - 1]) sessionStore.changeSession(sessionStore.sessionList[s_index - 1])
+                else sessionStore.resetSessionInfo()
+                ElMessage({
+                    type: 'success',
+                    message: msg,
+                })
+            } else ElMessage.error(res.data.msg)
+        })
+    }).catch(() => {
+        ElMessage({
+            type: 'info',
+            message: '取消删除',
+        })
+    })
+}
+
+const new_group_name = ref('')
+const changeGroupName = (conv_id: number) => {
+    changeGroupNameApi(conv_id, new_group_name.value).then((res) => {
         if (res.data.state === 200) {
             sessionStore.getSessionList()
             chatStore.getFriendList()
             convDrawer.value = false
-        } else ElMessage.error(res.data.msg)
+            ElMessage({
+                type: 'success',
+                message: res.data.msg,
+            })
+        }
+    }).catch(res => {
+        const status = res.status
+        if (status === 400) ElMessage.error(res.response.data.msg)
+        if (status === 401) ElMessage.error(res.response.data.msg)
+        if (status === 403) ElMessage.error(res.response.data.msg)
+        if (status === 501) ElMessage.error(res.response.data.msg)
+    })
+}
+
+const delGroup = () => {
+    ElMessageBox.confirm(
+        "确定解散群聊吗?",
+        '警告',
+        {
+            confirmButtonText: '确认',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        ws.value?.close()
+        const s_index = sessionStore.sessionList.indexOf(sessionStore.SessionInfo)
+        delGroupApi(sessionStore.SessionInfo.id).then(res => {
+            if (res.data.state === 200) {
+                sessionStore.getSessionList()
+                chatStore.getFriendList()
+                convDrawer.value = false
+                if (sessionStore.sessionList[s_index - 1]) sessionStore.changeSession(sessionStore.sessionList[s_index - 1])
+                else sessionStore.resetSessionInfo()
+                ElMessage.success(res.data.msg)
+            }
+        }).catch(res => {
+            const status = res.status
+            if (status === 401) ElMessage.error(res.response.data.msg)
+            if (status === 403) ElMessage.error(res.response.data.msg)
+            if (status === 404) ElMessage.error(res.response.data.msg)
+            if (status === 405) ElMessage.error(res.response.data.msg)
+            if (status === 500) ElMessage.error(res.response.data.msg)
+        })
+    }).catch(() => {
+        ElMessage({
+            type: 'info',
+            message: '取消删除',
+        })
     })
 }
 /* ---------- 生命周期 ---------- */
 onMounted(async () => {
-    makeWs(sessionStore.conv_id)
+    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.conv_id)
+    else ws.value?.close()
     await scrollToBottom()   // 首次渲染完滚到底
 })
+
 onUnmounted(() => ws.value?.close())
 </script>
 
@@ -320,13 +426,13 @@ onUnmounted(() => ws.value?.close())
 
 .content-body ul li.selfuser {
     justify-content: end;
-    background-color: rgba(0, 255, 255, 0.2);
+    /* background-color: rgba(0, 255, 255, 0.2); */
     /* position: relative; */
 }
 
 .content-body ul li.targetuser {
     justify-content: start;
-    background-color: rgba(173, 255, 47, 0.2);
+    /* background-color: rgba(173, 255, 47, 0.2); */
     /* position: relative; */
 }
 
@@ -352,11 +458,11 @@ onUnmounted(() => ws.value?.close())
 }
 
 .content-body ul li.selfuser .msg-content .content {
-    background-color: var(--header-bg-color);
+    background-color: var(--self-user-msg-bgc);
 }
 
 .content-body ul li.targetuser .msg-content .content {
-    background-color: var(--header-bg-color);
+    background-color: var(--target-user-msg-bgc);
 }
 
 .content {
@@ -374,6 +480,23 @@ onUnmounted(() => ws.value?.close())
     padding: 5px;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.input-area .mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--input-area-mask-bgc);
+    /* opacity: 0.5; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--header-text-color);
+    cursor: default;
+    user-select: none;
 }
 
 .input-header {
@@ -399,6 +522,7 @@ textarea {
     background-color: transparent;
     color: var(--header-text-color);
     border: none;
+    box-shadow: none !important;
 }
 
 :deep(.el-input__wrapper) {
@@ -419,6 +543,7 @@ textarea {
     height: 100%;
     overflow: auto;
     padding: 30px;
+    color: var(--header-text-color);
     /* background-color: antiquewhite; */
 }
 
@@ -453,7 +578,7 @@ textarea {
 .request-friend-list-content {
     width: calc(100% - 200px);
     display: flex;
-    justify-content: start;
+    justify-content: space-around;
     align-items: center;
 }
 
@@ -468,6 +593,14 @@ textarea {
 
 .request-friend-list-handle button {
     --el-button-text-color: rgb(91 91 91)
+}
+
+.in-or-out-status {
+    width: 150px;
+    height: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
 }
 
 :deep(.el-drawer__body) {
@@ -526,6 +659,54 @@ textarea {
 .group-type {
     width: 100%;
     height: 100%;
-    background: rgb(124, 187, 175);
+    /* background: rgb(126, 126, 172); */
+    cursor: default;
+    color: var(--header-text-color);
+    padding-top: 20px;
+}
+
+.group-type > div:nth-child(n+2) {
+    margin-top: 10px;
+}
+
+.change-name {
+    display: flex;
+    padding: 0 10px;
+    justify-content: space-between;
+    .el-input {
+        width: 75%;
+    }
+}
+
+.quit-group {
+    color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    margin: 0 12px 0 12px;
+    border-radius: 5px;
+    background-color: var(--layout-content-bg-color);
+    padding: 0 10px;
+}
+
+.quit-group:hover {
+    background-color: var(--chat-change-list-iconfont-hover-color);
+}
+
+.clear-group {
+    color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    margin: 0 12px 0 12px;
+    border-radius: 5px;
+    background-color: var(--layout-content-bg-color);
+    padding: 0 10px;
+}
+
+.clear-group:hover {
+    background-color: var(--chat-change-list-iconfont-hover-color);
 }
 </style>

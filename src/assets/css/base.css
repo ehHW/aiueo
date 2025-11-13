@@ -66,6 +66,15 @@ body,
     --chat-change-list-iconfont-hover-color: rgba(201, 201, 201, 0.4);
     --chat-change-list-iconfont-active-bg-color: rgb(228, 228, 228);
 
+    --chat-session-list-li-bg-color: #F5F5F5;
+    --chat-session-list-li-hover-bg-color: #E2E2E2;
+    --chat-session-list-li-active-bg-color: #E2E2E2;
+
+    --input-area-mask-bgc: rgba(0, 0, 0, 0.2);
+
+    --unreadnum-span-bgc: red;
+    --target-user-msg-bgc: #fff;
+    --self-user-msg-bgc: #CCEBFF;
 }
 
 :root.dark {
@@ -76,7 +85,7 @@ body,
     --header-bg-color: #001529;
     --header-text-color: #fff;
     --layout-content-bg-bg-color: black;
-    --layout-content-bg-color: #27253b;
+    --layout-content-bg-color: #222222;
 
     --primary-btn-text-color: #3e87d8;
     --primary-btn-bg-color: #18222c;
@@ -113,6 +122,12 @@ body,
     --chat-change-list-iconfont-text-color: #46a1ff;
     --chat-change-list-iconfont-hover-color: rgba(41, 41, 41, 0.7);
     --chat-change-list-iconfont-active-bg-color: rgb(42, 42, 42);
+
+    --input-area-mask-bgc: rgba(255, 255, 255, 0.1);
+
+    --unreadnum-span-bgc: #6d6d6d;
+    --target-user-msg-bgc: #3B3B3B;
+    --self-user-msg-bgc: #003E66;
 }
 
 #app {
@@ -127,4 +142,12 @@ body,
 
 .dark::view-transition-old(root) {
     z-index: 10;
+}
+
+div.el-message-box {
+    background-color: var(--header-bg-color);
+}
+
+.el-message-box__btns button:nth-child(1) {
+    --el-button-text-color: rgb(91 91 91)
 }

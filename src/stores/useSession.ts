@@ -19,14 +19,15 @@ export const useSessionStore = defineStore(
             id: 0,
             last_msg_id: null,
             last_time: null,
-            title: "title",
+            title: "",
             type: "private",
-            unread: 0
+            unread: 0,
+            dissolved: false
         })
         const sessionList = ref<SessionData[]>([])
         const messageStore = useMessageStore()
-        const getSessionList = () => {
-            return getSessionListApi().then(res => {
+        const getSessionList = async () => {
+            return await getSessionListApi().then(res => {
                 if (res.data.state == 200) {
                     sessionList.value = res.data.data
                     messageStore.sessionMessageList = []
@@ -46,6 +47,16 @@ export const useSessionStore = defineStore(
             SessionInfo.value = session
         }
 
+        const resetSessionInfo = () => {
+            SessionInfo.value.created_at = 0
+            SessionInfo.value.id = 0
+            SessionInfo.value.last_msg_id = null
+            SessionInfo.value.last_time = null
+            SessionInfo.value.title = ""
+            SessionInfo.value.type = "private"
+            SessionInfo.value.unread = 0
+        }
+
         return {
             conv_id,
             changeConvId,
@@ -53,6 +64,7 @@ export const useSessionStore = defineStore(
             sessionList,
             getSessionList,
             changeSession,
+            resetSessionInfo
         }
     },
     {

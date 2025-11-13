@@ -36,7 +36,7 @@ watch(() => chatStore.mode.message, (newVal) => {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    background-color: var(--header-bg-color);
+    background-color: var(--layout-content-bg-color);
     overflow: hidden;
 }
 

@@ -9,10 +9,12 @@ interface FriendRequestResponse<T> {
 }
 
 interface FriendRequestData {
-    sender_avatar: null | string
-    sender_id: number
-    sender_time: string
-    sender_username: string
+    avatar: null | string
+    user_id: number
+    username: string
+    status: "pending" | "accepted" | "declined"
+    created_at: string
+    direction: "in" | "out"
 }
 
 interface FriendListResponse<T> {
@@ -55,6 +57,7 @@ interface SessionData {
     title: string
     type: "private" | "group"
     unread: number
+    dissolved: boolean
 }
 
 interface CreateGroupParams {

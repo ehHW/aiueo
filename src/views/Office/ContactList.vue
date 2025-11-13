@@ -27,7 +27,7 @@ onMounted(() => chatStore.getFriendList())
     width: 100%;
     height: calc(100% - 50px);
     /* margin-top: 50px; */
-    background-color: var(--header-bg-color);
+    background-color: var(--chat-session-list-li-bg-color);
     overflow: auto;
     position: relative;
 }

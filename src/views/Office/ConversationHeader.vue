@@ -20,7 +20,7 @@
             <a-dropdown :placement="placement">
                 <a-button size="small">+</a-button>
                 <template #overlay>
-                    <a-menu style="background-color: var(--my-main-search-bg-color)">
+                    <a-menu style="background-color: var(--layout-content-bg-color)">
                         <a-menu-item>
                             <span @click="addFriendDialogVisible = true" style="color: var(--header-text-color);">
                                 添加好友
@@ -45,7 +45,7 @@
             title=""
             width="500"
             align-center
-            style="padding: 5px; background-color: var(--my-main-search-bg-color)"
+            style="padding: 5px; background-color: var(--layout-content-bg-color)"
             @closed="checkList = []"
         >
             <div class="add-friend-panel">
@@ -95,7 +95,7 @@
             title=""
             width="500"
             align-center
-            style="padding: 5px; background-color: var(--my-main-search-bg-color)"
+            style="padding: 5px; background-color: var(--layout-content-bg-color)"
             @closed="groupCheckedList = []"
         >
             <div class="add-friend-panel">
@@ -237,7 +237,7 @@ const createGroup = (checkedList: UserListData[]) => {
 .conversation-header {
     width: 100%;
     height: 50px;
-    background-color: var(--header-bg-color);
+    background-color: var(--layout-content-bg-color);
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -246,7 +246,7 @@ const createGroup = (checkedList: UserListData[]) => {
 .convsersation-search-input {
     width: 70% !important;
     height: 50%;
-    background-color: var(--my-main-search-bg-color) !important;
+    background-color: var(--layout-content-bg-color) !important;
 }
 
 .search-drop-down {
@@ -255,14 +255,14 @@ const createGroup = (checkedList: UserListData[]) => {
     position: absolute;
     left: 65px;
     top: 6%;
-    background-color: aquamarine;
+    /* background-color: aquamarine; */
     border-radius: 5px;
     padding: 5px;
     z-index: 2;
 }
 
 :deep(.el-input__wrapper) {
-    background-color: var(--my-main-search-bg-color) !important;
+    background-color: var(--layout-content-bg-color) !important;
 }
 
 :deep(.convsersation-search-input .el-input__inner) {
@@ -270,7 +270,7 @@ const createGroup = (checkedList: UserListData[]) => {
 }
 
 :deep(.css-dev-only-do-not-override-1p3hq3p.ant-btn.ant-btn-default.ant-btn-sm.ant-dropdown-trigger) {
-    background-color: var(--header-bg-color);
+    background-color: var(--layout-content-bg-color);
     color: var(--header-text-color);
 }
 
@@ -355,6 +355,18 @@ const createGroup = (checkedList: UserListData[]) => {
     padding: 0 10px;
     color: var(--header-text-color);
     font-size: 14px;
+    position: relative;
+}
+
+.add-friend-panel-right-header::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 0.5px;
+    background-color: var(--header-text-color);
+    left: 0;
+    bottom: -5px;
+
 }
 
 .add-friend-panel-right-body {
@@ -403,6 +415,10 @@ const createGroup = (checkedList: UserListData[]) => {
     display: flex;
     justify-content: end;
     align-items: center;
-    background-color: antiquewhite;
+    /* background-color: antiquewhite; */
+}
+
+:deep(div.add-friend-panel-right > div.add-friend-panel-right-footer > button:nth-child(2)) {
+    --el-button-text-color: rgb(91 91 91)
 }
 </style>

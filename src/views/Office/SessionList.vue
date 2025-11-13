@@ -101,7 +101,7 @@ onMounted(() => sessionStore.getSessionList())
     width: 100%;
     height: calc(100% - 50px);
     /* margin-top: 50px; */
-    background-color: var(--header-bg-color);
+    background-color: var(--chat-session-list-li-bg-color);
     overflow: auto;
     position: relative;
     user-select: none;
@@ -117,7 +117,7 @@ onMounted(() => sessionStore.getSessionList())
 .session-list ul li {
     width: 100%;
     height: 50px;
-    background-color: var(--header-bg-color);
+    background-color: var(--chat-session-list-li-bg-color);
     display: flex;
     padding: 5px 10px;
     align-items: center;
@@ -126,7 +126,7 @@ onMounted(() => sessionStore.getSessionList())
 }
 
 .session-list ul li:hover {
-    background-color: rgba(200, 200, 200, 0.4);
+    background-color: var(--chat-session-list-li-hover-bg-color);
 }
 
 .session-list ul li:nth-child(n+2) {
@@ -134,7 +134,7 @@ onMounted(() => sessionStore.getSessionList())
 }
 
 .session-list ul li.active {
-    background-color: #787878;
+    background-color: var(--chat-session-list-li-active-bg-color);
 }
 
 .session-item-left {
@@ -186,9 +186,13 @@ onMounted(() => sessionStore.getSessionList())
     display: inline-block;
     width: 18px;
     height: 18px;
+    font-size: 11px;
+    font-weight: 600;
     text-align: center;
     line-height: 18px;
     border-radius: 50%;
-    background-color: #d4d4d4;
+    background-color: var(--unreadnum-span-bgc);
+    color: #fff;
+    overflow: hidden;
 }
 </style>
