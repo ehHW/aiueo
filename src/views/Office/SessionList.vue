@@ -4,22 +4,22 @@
             <li
             v-for="session in sessionStore.sessionList"
             :key="session.id"
-            :class="sessionStore.conv_id === session.id ? 'active' : ''"
+            :class="SessionInfo.id === session.id ? 'active' : ''"
             @click="changeSession(session)">
                 <div class="session-item-left">
                     <img src="@/assets/img/miao.png" alt="" />
                 </div>
                 <div class="session-item-mid">
                     <div class="session-title">
-                        {{ session?.title }}
+                        {{ session.title }}
                     </div>
                     <div class="last-msg">
-                        {{ getLastMsg(session.id) }}
+                        {{ lastMsgMap[session.id]?.content }}
                     </div>
                 </div>
                 <div class="session-item-right">
                     <div class="time">
-                        {{ formatTs(getDate(session.id) as number) }}
+                        {{ formatTs(lastMsgMap[session.id]?.timestamp as number) }}
                     </div>
                     <div class="unreadnum">
                         <span>{{ session.unread <= 99 ? session.unread : "99+" }}</span>
@@ -31,30 +31,11 @@
 </template>
 
 <script setup lang="ts">
-import { useMessageStore } from '@/stores/useMessage';
 import { useSessionStore } from '@/stores/useSession';
-import { onMounted, toRefs, watch } from 'vue';
+import { toRefs } from 'vue';
 
-const messageStore = useMessageStore()
 const sessionStore = useSessionStore();
-const { SessionInfo, changeSession } = toRefs(sessionStore);
-
-
-const getLastMsg = (sessionId: number) => {
-    const session = messageStore.sessionMessageList.find(s => s.conv_id === sessionId);
-    const list = session?.msgList;
-    return list?.length ? list[list.length - 1].content : '';
-};
-
-const getDate = (sessionId: number) => {
-    const session = messageStore.sessionMessageList.find(s => s.conv_id === sessionId);
-    const list = session?.msgList;
-    return list?.length ? list[list.length - 1].timestamp : '';
-}
-
-watch(() => SessionInfo.value, () => {
-    sessionStore.changeConvId(SessionInfo.value.id)
-})
+const { SessionInfo, changeSession, lastMsgMap } = toRefs(sessionStore);
 
 // 处理日期
 const formatTs = (ts: number): string => {
@@ -93,7 +74,7 @@ const formatTs = (ts: number): string => {
     return '';
 }
 
-onMounted(() => sessionStore.getSessionList())
+sessionStore.getSessionList()
 </script>
 
 <style scoped>
@@ -138,6 +119,10 @@ onMounted(() => sessionStore.getSessionList())
 }
 
 .session-item-left {
+    width: 32px;
+    height: 100%;
+    display: flex;
+    align-items: center;
     img {
         width: 32px;
         height: 32px;
@@ -168,6 +153,7 @@ onMounted(() => sessionStore.getSessionList())
 
 .session-item-right {
     font-size: smaller;
+    width: 35px;
     height: 100%;
     display: flex;
     flex-direction: column;

@@ -104,6 +104,24 @@ interface SessionMessageItem {
     msgList: Message[]
 }
 
+interface MessageItem {
+    id: number
+    sender_id: number
+    sender_username: string
+    content: string
+    timestamp: number
+    is_recalled: boolean
+    parent_id: number
+}
+
+interface MsgCache {
+    list: MessageItem[]          // 已缓存的消息（始终按时间升序）
+    oldestId: number | null      // 当前已加载的最旧一条 id（用于再上拉）
+    newestId: number | null      // 当前已加载的最新一条 id（用于接收 socket 新消息去重）
+    noMore: boolean              // 已经到头（没有更旧的了）
+    pulling: boolean
+}
+
 export {
     wsMsg,
     FriendRequestData,
@@ -119,5 +137,7 @@ export {
     GetMessageListParams,
     GetMessageListResponse,
     Message,
-    SessionMessageItem
+    SessionMessageItem,
+    MessageItem,
+    MsgCache
 }

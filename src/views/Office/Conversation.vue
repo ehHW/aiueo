@@ -1,6 +1,6 @@
 <template>
     <div class="conversation">
-        <el-splitter layout="vertical" v-show="chatStore.mode.message">
+        <el-splitter layout="vertical" v-show="chatStore.mode.message && sessionStore.SessionInfo.id !== 0">
             <!-- 展示区 -->
             <el-splitter-panel>
                 <div class="content-area">
@@ -13,7 +13,7 @@
                     <div class="content-body" ref="contentBody" @scroll="onScroll">
                         <ul>
                             <li
-                            v-for="msgItem in messageStore.currentSession?.msgList"
+                            v-for="msgItem in msgCache.list"
                             :key="msgItem.id"
                             :class="msgItem.sender_id === userStore.userInfo.user_id ? 'selfuser' : 'targetuser'"
                             >
@@ -38,16 +38,16 @@
                     <el-drawer v-model="convDrawer" title="I am the title" :with-header="false">
                         <div class="convDrawer">
                             <div class="private-type" v-show="sessionStore.SessionInfo.type === 'private'">
-                                <div class="set-as-top">
+                                <div class="set-as-top" @click="notDo">
                                     <span>设为置顶</span><el-switch v-model="setAsTop" />
                                 </div>
-                                <div class="msg-undisturbed">
+                                <div class="msg-undisturbed" @click="notDo">
                                     <span>消息免打扰</span><el-switch v-model="msgUndisturbed" />
                                 </div>
-                                <div class="block-out">
+                                <div class="block-out" @click="notDo">
                                     <span>屏蔽此人</span><el-switch v-model="blockOut" />
                                 </div>
-                                <div class="del-msg-history">
+                                <div class="del-msg-history" @click="notDo">
                                     <span>删除聊天记录</span>
                                 </div>
                                 <div class="del-friend" @click="delFriendOrQuitGroup(sessionStore.SessionInfo.id)">
@@ -91,6 +91,7 @@
                 </div>
             </el-splitter-panel>
         </el-splitter>
+        <div class="big-mask" v-show="sessionStore.SessionInfo.id === 0">暂未打开任何会话</div>
         <!-- 处理好友请求区 -->
         <div class="request-friend-list" v-show="chatStore.mode.contact">
             <ul>
@@ -118,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick, computed } from 'vue'
 import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
 import { handleFriendRequestApi, delFriendOrQuitGroupApi, changeGroupNameApi, isGroupCreatorApi, delGroupApi } from "@/api/friend";
@@ -131,6 +132,15 @@ const sessionStore = useSessionStore()
 const messageStore = useMessageStore()
 const userStore = useUserStore()
 const contentBody = useTemplateRef('contentBody')
+
+const msgCache = computed(() => messageStore.cache.get(sessionStore.SessionInfo.id)!)
+
+/* 进入会话 */
+watch(() => sessionStore.SessionInfo, async () => {
+    await messageStore.pullLatest(sessionStore.SessionInfo.id)   // 没有就拉最新
+    scrollToBottom()
+}, { immediate: true })
+
 
 const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => {
     handleFriendRequestApi(action, senderId).then(() => {
@@ -148,7 +158,7 @@ const handleFriendRequest = (action: 'accept' | 'decline', senderId: number) => 
 
 /* 滚动监听 */
 let prevScrollTop = 0
-const onScroll = (e: Event) => {
+const onScroll = async (e: Event) => {
     const el = e.target as HTMLDivElement
     const toTop = el.scrollTop <= 0 && prevScrollTop >= 0
     prevScrollTop = el.scrollTop
@@ -156,9 +166,8 @@ const onScroll = (e: Event) => {
     if (toTop) {
         // 记录当前高度，用于加载后保持滚动位置
         const oldHeight = el.scrollHeight
-        messageStore.loadMoreHistory(sessionStore.SessionInfo?.id)?.then(() => {
-            nextTick(() => { el.scrollTop = el.scrollHeight - oldHeight })
-        })
+        await messageStore.pullHistory(sessionStore.SessionInfo.id)
+        nextTick(() => { el.scrollTop = el.scrollHeight - oldHeight })
     }
 }
 
@@ -187,27 +196,20 @@ const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
         ElMessage.error(msg.content)
         return
     }
-    const id = msg.id
+    const id = msg.id as number
     if (delivered.has(id)) return   // 重复直接丢弃
     delivered.add(id)
-    if (type === 'inbox' && state === 200) {               // 个人收件箱
-        // 1. 如果当前正好在对应会话，直接追加
-        if (msg.conv_id === sessionStore.conv_id) {
-            messageStore.currentSession!.msgList.push(msg)
-            nextTick(scrollToBottom)
-        } else {
-            // 2. 否则弹通知 / 未读+1 / 会话列表重新排序
-            ElMessage.primary(`新消息来自 ${msg.sender_username}`)
-            // chatStore.increaseUnread(msg.conv_id)
-            messageStore.sessionMessageList.find(item => item.conv_id === msg.conv_id)!.msgList.push(msg)
-        }
+
+    const convId = msg.conv_id as number
+    sessionStore.setLastMsg(convId, msg)
+    const node = messageStore.ensureCache(convId)
+    if (convId === sessionStore.SessionInfo.id) {
+        node.list.push(msg)
+        node.oldestId = id
+        nextTick(scrollToBottom)   // 你的滚动函数
         return
     }
-    if (type === 'normal' && state === 200) {
-        // 原来的聊天室消息（已经在房间里）
-        messageStore.currentSession!.msgList.push(msg)
-        nextTick(scrollToBottom)
-    }
+    ElMessage.primary(`新消息来自 ${msg.sender_username}`)
 }
 /* ---------- 创建/销毁连接 ---------- */
 function makeWs(id: number) {
@@ -236,20 +238,20 @@ function makeWs(id: number) {
 
 /* ---------- 切换房间 ---------- */
 function changeRoom() {
-    console.log(`🔄  switching to room ${sessionStore.conv_id}`)
-    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.conv_id)
+    console.log(`🔄  switching to room ${sessionStore.SessionInfo.id}`)
+    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.SessionInfo.id)
     else ws.value?.close()
 }
 
 const creator = ref(false);
-isGroupCreatorApi(sessionStore.conv_id).then(() => creator.value = true).catch(() => creator.value = false)
-watch(() => sessionStore.conv_id, () => {
-    isGroupCreatorApi(sessionStore.conv_id).then(() => creator.value = true).catch(() => creator.value = false)
+isGroupCreatorApi(sessionStore.SessionInfo.id).then(() => creator.value = true).catch(() => creator.value = false)
+watch(() => sessionStore.SessionInfo, () => {
+    isGroupCreatorApi(sessionStore.SessionInfo.id).then(() => creator.value = true).catch(() => creator.value = false)
     delivered.clear()
     changeRoom()
 })
 
-watch(() => messageStore.currentSession?.msgList,
+watch(() => msgCache.value.list,
     async () => {
         await scrollToBottom()
     },
@@ -298,9 +300,10 @@ const delFriendOrQuitGroup = (conv_id: number) => {
 
 const new_group_name = ref('')
 const changeGroupName = (conv_id: number) => {
-    changeGroupNameApi(conv_id, new_group_name.value).then((res) => {
+    changeGroupNameApi(conv_id, new_group_name.value).then(async (res) => {
         if (res.data.state === 200) {
-            sessionStore.getSessionList()
+            await sessionStore.getSessionList()
+            sessionStore.changeSessionById(sessionStore.SessionInfo.id)
             chatStore.getFriendList()
             convDrawer.value = false
             ElMessage({
@@ -328,14 +331,12 @@ const delGroup = () => {
         }
     ).then(() => {
         ws.value?.close()
-        const s_index = sessionStore.sessionList.indexOf(sessionStore.SessionInfo)
         delGroupApi(sessionStore.SessionInfo.id).then(res => {
             if (res.data.state === 200) {
                 sessionStore.getSessionList()
                 chatStore.getFriendList()
                 convDrawer.value = false
-                if (sessionStore.sessionList[s_index - 1]) sessionStore.changeSession(sessionStore.sessionList[s_index - 1])
-                else sessionStore.resetSessionInfo()
+                sessionStore.resetSessionInfo()
                 ElMessage.success(res.data.msg)
             }
         }).catch(res => {
@@ -355,12 +356,14 @@ const delGroup = () => {
 }
 /* ---------- 生命周期 ---------- */
 onMounted(async () => {
-    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.conv_id)
+    if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.SessionInfo.id)
     else ws.value?.close()
     await scrollToBottom()   // 首次渲染完滚到底
 })
 
 onUnmounted(() => ws.value?.close())
+
+const notDo = () => ElMessage.warning("没做")
 </script>
 
 <style scoped>
@@ -368,6 +371,16 @@ onUnmounted(() => ws.value?.close())
     width: 100%;
     height: 100%;
     margin: 0 auto;
+}
+
+.big-mask {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--header-text-color);
+    background-color: transparent;
 }
 
 .content-area {

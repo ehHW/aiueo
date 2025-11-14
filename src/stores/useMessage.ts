@@ -1,57 +1,74 @@
 import { defineStore } from 'pinia'
 
 import { getMessageListApi } from '@/api/friend';
-// import type { GetMessageListParams, Message, SessionMessageItem } from '@/types/chat';
-import type { SessionMessageItem } from '@/types/chat';
-import { computed, ref } from 'vue';
-import { useSessionStore } from '@/stores/useSession';
+import type { MessageItem, MsgCache } from '@/types/chat';
+import { reactive } from 'vue';
 
 
 export const useMessageStore = defineStore(
     'message',
     () => {
-        const sessionStore = useSessionStore()
-        const sessionMessageList = ref<SessionMessageItem[]>([])
-        const getSessionMessageListMessages = () => {
-            sessionMessageList.value.forEach(sessionMessageItem => {
-                getMessageListApi({
-                    conversation_id: sessionMessageItem.conv_id,
-                    limit: 50
-                }).then(res => {
-                    const list = res.data.data
-                    sessionMessageItem.noMore = res.data.data.length < 50
-                    sessionMessageItem.msgList.push(...list)
+        const cache = reactive(new Map<number, MsgCache>())
+        /* 获取或创建缓存壳子 */
+        const ensureCache = (convId: number): MsgCache => {
+            if (!cache.has(convId)) {
+                cache.set(convId, {
+                    list: [],
+                    newestId: null,
+                    oldestId: null,
+                    noMore: false,
+                    pulling: false
                 })
-            })
+            }
+            return cache.get(convId)!
         }
-        const currentSession = computed(() => sessionMessageList.value.find(item => item.conv_id === sessionStore.conv_id))
-        const loading = ref(false)          // 是否正在请求
-
-        const loadMoreHistory = (conversationId: number) => {
-            const currentSession = sessionMessageList.value.find(sessionMessageItem => sessionMessageItem.conv_id === conversationId)
-            if (loading.value || currentSession!.noMore) return
-            const oldestId = currentSession?.msgList[0]?.id      //messageList.value[0]?.id
-            if (!oldestId) return          // 当前列表为空
-            loading.value = true
-            return getMessageListApi({
-                conversation_id: conversationId,
-                last_msg_id: oldestId - 1,   // 后端 id>last_msg_id ，所以减 1
-                limit: 50
-            }).then(res => {
+        /* 首次进入会话：拉最新 limit 条 */
+        const pullLatest = async (convId: number, limit = 50) => {
+            const node = ensureCache(convId)
+            if (node.list.length) return        // 已有数据
+            if (node.pulling) return
+            node.pulling = true
+            try {
+                const res = await getMessageListApi({ conversation_id: convId, limit })
                 if (res.data.state === 200) {
-                    const list = res.data.data
-                    if (list.length) currentSession.msgList.unshift(...list)
-                    currentSession!.noMore = list.length < 50
-                    } else ElMessage.error(res.data.msg)
-                }).finally(() => loading.value = false)
+                    const arr = res.data.data as MessageItem[]
+                    node.list = arr
+                    node.oldestId = arr[0]?.id ?? null
+                    node.newestId = arr[arr.length - 1]?.id ?? null
+                    node.noMore = arr.length < limit
+                }
+            } finally {
+                node.pulling = false
+            }
         }
+        /* 上拉加载历史 */
+        const pullHistory = async (convId: number, limit = 50) => {
+            const node = ensureCache(convId)
+            if (node.noMore || node.pulling) return
+            const lastMsgId = node.oldestId! - 1   // 后端 id<last_msg_id
+            node.pulling = true
+            try {
+                const res = await getMessageListApi({ conversation_id: convId, last_msg_id: lastMsgId, limit })
+                if (res.data.state === 200) {
+                    const arr = res.data.data as MessageItem[]
+                    console.log(arr);
+                    node.list.unshift(...arr)
+                    node.oldestId = arr[0]?.id ?? node.oldestId
+                    node.noMore = arr.length < limit
+                }
+            } finally {
+                node.pulling = false
+            }
+        }
+        /* 清空某个会话（退出群/被踢） */
+        const dropCache = (convId: number) => cache.delete(convId)
 
         return {
-            currentSession,
-            loading,
-            loadMoreHistory,
-            sessionMessageList,
-            getSessionMessageListMessages
+            cache,
+            ensureCache,
+            pullLatest,
+            pullHistory,
+            dropCache,
         }
     },
     {
