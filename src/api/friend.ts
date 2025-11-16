@@ -32,9 +32,7 @@ export const handleFriendRequestApi = (action: 'accept' | 'decline', sender_id: 
 
 export const getFriendRequestListApi = (type: 'in' | 'out' | 'all' = 'all') => {
     return instance.get<FriendRequestResponse<FriendRequestData[]>>('/chat/friends/request/list/', {
-        params: {
-            type
-        }
+        params: { type }
     })
 }
 
@@ -51,9 +49,11 @@ export const createGroupApi = (data: CreateGroupParams) => {
 }
 
 export const getMessageListApi = (data: GetMessageListParams) => {
-    return instance.get<GetMessageListResponse>('/chat/messages/', {
-        params: data
-    })
+    return instance.get<GetMessageListResponse>('/chat/messages/', { params: data })
+}
+
+export const markMsgAsReadApi = (msg_id: number) => {
+    return instance.post(`/chat/messages/mark-read/`, {msg_id})
 }
 
 export const delFriendOrQuitGroupApi = (conv_id: number) => {
@@ -71,3 +71,4 @@ export const isGroupCreatorApi = (conv_id: number) => {
 export const delGroupApi = (conv_id: number) => {
     return instance.delete(`/chat/conversations/del/${conv_id}/`)
 }
+

@@ -53,7 +53,6 @@ export const useChatStore = defineStore(
                 const conv_id = res.data.data.conversation_id
                 changeMode('message')
                 sessionStore.getSessionList().then(() => {
-                    // sessionStore.changeConvId(conv_id)
                     sessionStore.changeSession(sessionStore.sessionList.find(item => item.id === conv_id) as SessionData)
                 })
             })

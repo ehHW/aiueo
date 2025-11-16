@@ -22,7 +22,7 @@
                         {{ formatTs(lastMsgMap[session.id]?.timestamp as number) }}
                     </div>
                     <div class="unreadnum">
-                        <span>{{ session.unread <= 99 ? session.unread : "99+" }}</span>
+                        <span v-show="session.unread">{{ session.unread <= 99 ? session.unread : "99+" }}</span>
                     </div>
                 </div>
             </li>

@@ -61,6 +61,7 @@ body,
     --menu-bg-color: #fff;
 
     --el-text-color-regular: black;
+    --chat-conv-header-dropdown-hover-color: #ddd;
 
     --chat-change-list-iconfont-text-color: #409eff;
     --chat-change-list-iconfont-hover-color: rgba(201, 201, 201, 0.4);
@@ -118,11 +119,13 @@ body,
     --menu-bg-color: #333;
 
     --el-text-color-regular: rgb(222, 222, 222);
+    --chat-conv-header-dropdown-hover-color: #2a2a2a;
 
     --chat-change-list-iconfont-text-color: #46a1ff;
     --chat-change-list-iconfont-hover-color: rgba(41, 41, 41, 0.7);
     --chat-change-list-iconfont-active-bg-color: rgb(42, 42, 42);
 
+    --chat-session-list-li-active-bg-color: #484848;
     --input-area-mask-bgc: rgba(255, 255, 255, 0.1);
 
     --unreadnum-span-bgc: #6d6d6d;

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { getMessageListApi, getSessionListApi } from '@/api/friend';
-import type { MessageItem, SessionData } from '@/types/chat';
+import type { MessageItem, SessionData, WSReadReceiptData } from '@/types/chat';
 import { ref } from 'vue';
 
 
@@ -31,15 +31,14 @@ export const useSessionStore = defineStore(
         }
 
         /* 新增：convId -> 最后一条消息 */
-        const lastMsgMap = ref()
+        const lastMsgMap = ref<Record<number, MessageItem>>({})
         /* 批量拉取每个会话的最后 1 条消息 */
         const loadLastMessage = async () => {
-            const reqs = convIds.value.map(convId =>
-                getMessageListApi({ conversation_id: convId, last_msg_id: 0, limit: 1 }).then(res => {
-                    if (res.data.state === 200 && res.data.data.length) {
-                        lastMsgMap.value[convId] = res.data.data[0]
-                    }
-                }).catch(() => {/* 单条失败不影响整体 */}))
+            const reqs = convIds.value.map(convId => getMessageListApi({ conv_id: convId, last_msg_id: 0, limit: 1 }).then(res => {
+                if (res.data.state === 200 && res.data.data.length) {
+                    lastMsgMap.value[convId] = res.data.data[0];
+                }
+            }).catch(() => { }))
             await Promise.all(reqs)
         }
 
@@ -53,6 +52,14 @@ export const useSessionStore = defineStore(
 
         const setLastMsg = (conv_id: number, msg: MessageItem) => {
             lastMsgMap.value[conv_id] = msg
+        }
+
+        const updateUnRead = (data: WSReadReceiptData, type: 'add' | 'minus') => {
+            const conv = sessionList.value.find(item => item.id === data.conv_id)
+            if (conv) {
+                if (conv.unread > 0 && type === 'minus') conv.unread --;
+                if (type === 'add') conv.unread ++;
+            }
         }
 
         const resetSessionInfo = () => {
@@ -74,7 +81,8 @@ export const useSessionStore = defineStore(
             resetSessionInfo,
             loadLastMessage,
             lastMsgMap,
-            setLastMsg
+            setLastMsg,
+            updateUnRead
         }
     },
     {

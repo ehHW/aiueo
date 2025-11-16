@@ -14,7 +14,7 @@ export const useUserStore = defineStore(
         const modules = import.meta.glob(['../views/*/*.vue'])
         const menuList = ref<MenuListData<MenuListChildren>[]>([])
         const userInfo = reactive<UserInfo>({
-            user_id: '',
+            user_id: 0,
             username: '',
             token: '',
             mobile: '',
@@ -99,7 +99,7 @@ export const useUserStore = defineStore(
                     if (res.data.state === 200) {
                         userInfo.token = ''
                         userInfo.mobile = ''
-                        userInfo.user_id = ''
+                        userInfo.user_id = 0
                         userInfo.role_id = ''
                         userInfo.username = ''
                         userInfo.role_name = ''
@@ -113,7 +113,7 @@ export const useUserStore = defineStore(
                 .catch(() => {
                     userInfo.token = ''
                     userInfo.mobile = ''
-                    userInfo.user_id = ''
+                    userInfo.user_id = 0
                     userInfo.role_id = ''
                     userInfo.username = ''
                     userInfo.role_name = ''

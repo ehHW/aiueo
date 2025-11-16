@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 
 import { getMessageListApi } from '@/api/friend';
-import type { MessageItem, MsgCache } from '@/types/chat';
+import type { MessageItem, MsgCache, WSReadReceiptData } from '@/types/chat';
 import { reactive } from 'vue';
+import { useUserStore } from './useUser';
 
 
 export const useMessageStore = defineStore(
@@ -25,11 +26,11 @@ export const useMessageStore = defineStore(
         /* 首次进入会话：拉最新 limit 条 */
         const pullLatest = async (convId: number, limit = 50) => {
             const node = ensureCache(convId)
-            if (node.list.length) return        // 已有数据
+            // if (node.list.length) return
             if (node.pulling) return
             node.pulling = true
             try {
-                const res = await getMessageListApi({ conversation_id: convId, limit })
+                const res = await getMessageListApi({ conv_id: convId, limit })
                 if (res.data.state === 200) {
                     const arr = res.data.data as MessageItem[]
                     node.list = arr
@@ -48,7 +49,7 @@ export const useMessageStore = defineStore(
             const lastMsgId = node.oldestId! - 1   // 后端 id<last_msg_id
             node.pulling = true
             try {
-                const res = await getMessageListApi({ conversation_id: convId, last_msg_id: lastMsgId, limit })
+                const res = await getMessageListApi({ conv_id: convId, last_msg_id: lastMsgId, limit })
                 if (res.data.state === 200) {
                     const arr = res.data.data as MessageItem[]
                     console.log(arr);
@@ -60,6 +61,19 @@ export const useMessageStore = defineStore(
                 node.pulling = false
             }
         }
+        /* 设置消息已读 */
+        const userStore = useUserStore()
+        const updateReadReceipt = (data: WSReadReceiptData) => {
+            const node = ensureCache(data.conv_id)
+            const msg = node.list.find(msg => msg.id === data.msg_id)
+            if (msg) {
+                msg.is_read_by_other = true
+                msg.readers.push({
+                    user_id: userStore.userInfo.user_id,
+                    username: userStore.userInfo.username,
+                })
+            }
+        }
         /* 清空某个会话（退出群/被踢） */
         const dropCache = (convId: number) => cache.delete(convId)
 
@@ -69,6 +83,7 @@ export const useMessageStore = defineStore(
             pullLatest,
             pullHistory,
             dropCache,
+            updateReadReceipt
         }
     },
     {

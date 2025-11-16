@@ -76,7 +76,7 @@ interface CreateGroupResponseData {
 }
 
 interface GetMessageListParams {
-    conversation_id: number
+    conv_id: number
     last_msg_id?: number
     limit: number
 }
@@ -96,6 +96,10 @@ interface Message {
     parent_id: number
     is_recalled: boolean
     timestamp: number
+    is_read: boolean
+    is_read_by_other: boolean
+    read_count: number,
+    readers: {user_id: number, username: string}[],
 }
 
 interface SessionMessageItem {
@@ -112,6 +116,10 @@ interface MessageItem {
     timestamp: number
     is_recalled: boolean
     parent_id: number
+    is_read: boolean
+    is_read_by_other: boolean
+    read_count: number,
+    readers: {user_id: number, username: string}[],
 }
 
 interface MsgCache {
@@ -120,6 +128,14 @@ interface MsgCache {
     newestId: number | null      // 当前已加载的最新一条 id（用于接收 socket 新消息去重）
     noMore: boolean              // 已经到头（没有更旧的了）
     pulling: boolean
+}
+
+interface WSReadReceiptData {
+    msg_id: number,
+    conv_id: number,
+    reader_id: number,
+    reader_name: string,
+    read_at: number,
 }
 
 export {
@@ -139,5 +155,6 @@ export {
     Message,
     SessionMessageItem,
     MessageItem,
-    MsgCache
+    MsgCache,
+    WSReadReceiptData
 }

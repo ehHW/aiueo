@@ -18,7 +18,7 @@ interface RefreshTokenResponse {
 }
 
 interface UserInfo {
-    user_id: number | string
+    user_id: number
     token: string
     mobile: string
     username: string

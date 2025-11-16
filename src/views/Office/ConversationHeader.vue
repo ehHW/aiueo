@@ -269,17 +269,17 @@ const createGroup = (checkedList: UserListData[]) => {
     height: 100% !important;
 }
 
-:deep(.css-dev-only-do-not-override-1p3hq3p.ant-btn.ant-btn-default.ant-btn-sm.ant-dropdown-trigger) {
+.conversation-header > button {
     background-color: var(--layout-content-bg-color);
     color: var(--header-text-color);
 }
 
-:deep(.css-dev-only-do-not-override-1p3hq3p.ant-btn.ant-btn-default.ant-btn-sm.ant-dropdown-trigger:hover) {
+.conversation-header > button:hover {
     color: #4096ff
 }
 
 :deep(.ant-dropdown-menu-item.ant-dropdown-menu-item-only-child:hover) {
-    background-color: #2a2a2a;
+    background-color: var(--chat-conv-header-dropdown-hover-color);
 }
 
 .add-friend-panel {

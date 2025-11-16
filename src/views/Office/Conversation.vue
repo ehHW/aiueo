@@ -16,6 +16,7 @@
                             v-for="msgItem in msgCache.list"
                             :key="msgItem.id"
                             :class="msgItem.sender_id === userStore.userInfo.user_id ? 'selfuser' : 'targetuser'"
+                            :ref="el => setMsgRef(el, msgItem.id)"
                             >
                                 <div class="user-avatar" v-if="!(msgItem.sender_id === userStore.userInfo.user_id)">
                                     <img src="@/assets/img/miao.png" alt="">
@@ -26,6 +27,7 @@
                                     </div>
                                     <div class="content">
                                         {{ msgItem.content }}
+                                        <div class="is_read_by_other" v-if="msgItem.is_read_by_other && msgItem.sender_id === userStore.userInfo.user_id && sessionStore.SessionInfo.type === 'private'">已读</div>
                                     </div>
                                 </div>
                                 <div class="user-avatar" v-if="msgItem.sender_id === userStore.userInfo.user_id">
@@ -119,10 +121,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, useTemplateRef, nextTick, computed, type ComponentPublicInstance } from 'vue'
 import ReconnectingWebSocket from '@/utils/ReconnectingWebSocket'
 import { useChatStore } from "@/stores/useChat";
-import { handleFriendRequestApi, delFriendOrQuitGroupApi, changeGroupNameApi, isGroupCreatorApi, delGroupApi } from "@/api/friend";
+import {
+    handleFriendRequestApi,
+    delFriendOrQuitGroupApi,
+    changeGroupNameApi,
+    isGroupCreatorApi,
+    delGroupApi,
+    markMsgAsReadApi
+} from "@/api/friend";
 import { useSessionStore } from '@/stores/useSession';
 import { useMessageStore } from '@/stores/useMessage';
 import { useUserStore } from '@/stores/useUser';
@@ -186,18 +195,26 @@ function send() {
     msg.value = ''
 }
 /* ---------- 统一的事件回调（静态，避免闭包旧实例） ---------- */
-const handleOpen = () => console.log('✅ WebSocket opened')
-const handleClose = () => console.log('❌ WebSocket closed')
-const handleError = () => console.log('⚠️ WebSocket error')
+const handleOpen = () => {}  // console.log('✅ WebSocket opened')
+const handleClose = () => {}  // console.log('❌ WebSocket closed')
+const handleError = () => {}  // console.log('⚠️ WebSocket error')
 const delivered = new Set<number>()
 const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
-    const { type, state, msg } = JSON.parse(e.data)
+    const { type, state, data } = JSON.parse(e.data)
     if (type === 'inbox' && state === 403) {
-        ElMessage.error(msg.content)
-        return
+        ElMessage.error(data?.msg || '操作被拒绝');
+        return;
     }
+    if (type === 'read_receipt') {
+        // 这里更新对勾、已读人数等 UI
+        messageStore.updateReadReceipt(data);
+        return;
+    }
+    if (type !== 'group' && type !== 'inbox') return;
+    const msg = data?.msg;
+    if (!msg || typeof msg.id !== 'number') return;
     const id = msg.id as number
-    if (delivered.has(id)) return   // 重复直接丢弃
+    if (delivered.has(id)) return;
     delivered.add(id)
 
     const convId = msg.conv_id as number
@@ -206,11 +223,13 @@ const handleMessage = (e: MessageEvent<string>) => {  // e: MessageEvent<string>
     if (convId === sessionStore.SessionInfo.id) {
         node.list.push(msg)
         node.oldestId = id
-        nextTick(scrollToBottom)   // 你的滚动函数
+        nextTick(scrollToBottom)
         return
     }
-    ElMessage.primary(`新消息来自 ${msg.sender_username}`)
+    sessionStore.updateUnRead(msg, 'add');
+    // ElMessage.primary(`新消息来自 ${msg.sender_username}`)
 }
+
 /* ---------- 创建/销毁连接 ---------- */
 function makeWs(id: number) {
   // 如果已有连接，先强制关闭
@@ -238,9 +257,10 @@ function makeWs(id: number) {
 
 /* ---------- 切换房间 ---------- */
 function changeRoom() {
-    console.log(`🔄  switching to room ${sessionStore.SessionInfo.id}`)
+    // console.log(`🔄  switching to room ${sessionStore.SessionInfo.id}`)
     if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.SessionInfo.id)
     else ws.value?.close()
+    msgRefs.value.clear()
 }
 
 const creator = ref(false);
@@ -251,9 +271,15 @@ watch(() => sessionStore.SessionInfo, () => {
     changeRoom()
 })
 
+const isAtBottom = (tolerance = 5): boolean => {
+    const el = contentBody.value
+    if (!el) return false
+    return el.scrollHeight - el.scrollTop - el.clientHeight <= tolerance
+}
+
 watch(() => msgCache.value.list,
     async () => {
-        await scrollToBottom()
+        if (isAtBottom()) await scrollToBottom()
     },
     { deep: true }   // 数组 push 会触发
 )
@@ -354,7 +380,65 @@ const delGroup = () => {
         })
     })
 }
-/* ---------- 生命周期 ---------- */
+
+const markMsgAsRead = (msg_id: number, type: 'add' | 'minus') => {
+    markMsgAsReadApi(msg_id).then(res => {
+        const { data } = res.data
+        messageStore.updateReadReceipt(data);
+        sessionStore.updateUnRead(data, type);
+    }, () => {})
+}
+
+const msgRefs = ref(new Map())
+const observer = ref<IntersectionObserver | null>(null)
+
+const setMsgRef = (el: Element | ComponentPublicInstance | null, id: number) => {
+    if (el && el instanceof HTMLLIElement) msgRefs.value.set(id, el)
+}
+
+const observeMessages = () => {
+    if (observer.value) {
+        observer.value.disconnect()
+    }
+
+    observer.value = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && entry.intersectionRatio === 1) {
+                let msgId = null
+                for (const [id, el] of msgRefs.value) {
+                    if (el === entry.target) { msgId = id; break }
+                }
+                if (msgId == null) return
+                const msg = msgCache.value.list.find(m => m.id === msgId)
+                if (!msg) return
+                const s_type = sessionStore.SessionInfo.type
+                const user_id = userStore.userInfo.user_id
+                if (s_type === 'private') {
+                    if (msg.sender_id !== user_id && !msg.is_read_by_other) {
+                        markMsgAsRead(msgId, 'minus')
+                    }
+                }
+                if (s_type === 'group') {
+                    const user_id_list = msg.readers.map(user => user.user_id)
+                    if (msg.sender_id !== user_id && !user_id_list.includes(user_id)) {
+                        markMsgAsRead(msgId, 'minus')
+                    }
+                }
+            }
+        })
+    }, {
+        root: contentBody.value,
+        threshold: 1.0 // 完全进入视口
+    })
+
+    msgRefs.value.forEach(el => observer.value!.observe(el))
+}
+
+watch(() => msgRefs.value, async () => {
+    await nextTick() // 等 DOM 更新
+    observeMessages()
+}, { deep: true, immediate: true })
+
 onMounted(async () => {
     if (!sessionStore.SessionInfo.dissolved) makeWs(sessionStore.SessionInfo.id)
     else ws.value?.close()
@@ -410,7 +494,8 @@ const notDo = () => ElMessage.warning("没做")
     width: 100%;
     height: calc(100% - 50px);
     overflow: auto;
-    color: var(--header-text-color)
+    color: var(--header-text-color);
+    padding: 1px 0;
 }
 
 .content-body ul {
@@ -460,6 +545,22 @@ const notDo = () => ElMessage.warning("没做")
     justify-content: space-between;
 }
 
+.is_read_by_other {
+    width: 30px;
+    font-size: 10px;
+    position: absolute;
+}
+
+li.selfuser .is_read_by_other {
+    right: -8px;
+    bottom: -12px;
+}
+
+/* li.targetuser .is_read_by_other {
+    right: -2px;
+    bottom: -12px;
+} */
+
 .content-body ul li.selfuser .msg-content {
     align-items: end;
     margin: 0 10px 0 40px;
@@ -483,6 +584,7 @@ const notDo = () => ElMessage.warning("没做")
     padding: 10px;
     display: flex;
     align-items: center;
+    position: relative;
 }
 
 .input-area {
