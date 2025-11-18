@@ -24,9 +24,7 @@
                         </span>
                         <template #dropdown>
                             <el-dropdown-menu style="background-color: var(--bg-color); border: none">
-                                <el-dropdown-item disabled>{{
-                                    userStore.userInfo.username
-                                    }}</el-dropdown-item>
+                                <!-- <el-dropdown-item disabled>{{ userStore.userInfo.username}}</el-dropdown-item> -->
                                 <el-dropdown-item @click=" userStore.logout(); tabViewsStore.clearTabViews()"
                                     style="color: var(--el-text-color-regular)">退出登录</el-dropdown-item>
                                 <el-dropdown-item style="color: var(--el-text-color-regular)">主题切换</el-dropdown-item>

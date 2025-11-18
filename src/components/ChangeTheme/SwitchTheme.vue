@@ -72,6 +72,7 @@ function handleClick(event: MouseEvent) {
             {
                 duration: 600,
                 easing: 'cubic-bezier(0.605, 0.010, 1.000, 0.635)',
+                fill: 'both',
                 pseudoElement: isDark.value
                     ? '::view-transition-old(root)'
                     : '::view-transition-new(root)',
